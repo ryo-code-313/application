@@ -6,7 +6,7 @@
 
 https://ryo-code-313.github.io/application/
 
-食材タイプ・きのみタイプ向けの厳選チェッカーは [`checker/`](checker/README.md) にあります（https://ryo-code-313.github.io/application/checker/）。
+きのみタイプ・食材タイプ・スキルタイプ（ミュウツー以外も含む）向けの厳選チェッカーは [`checker/`](checker/README.md) にあります（https://ryo-code-313.github.io/application/checker/）。
 
 ## 構成
 

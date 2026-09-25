@@ -1,10 +1,11 @@
 // アプリの状態管理と localStorage への永続化。
 // 記録と狙い食材は統合前の食材タイプ版（ig 接頭辞）・きのみタイプ版（bf 接頭辞）と同じキーを使い、以前の記録をそのまま読む。
+// スキルタイプの記録は sklog に保存する。
 // 共通の設定は ck 接頭辞で持ち、まだなければ統合前の設定を引き継ぐ。
 import { TYPES, DEFAULT_TYPE, typeOf } from './types.js';
 
 const KEYS = { camp: 'ckcamp', g80: 'ckg80', mode: 'ckmode', mon: 'ckmon', mons: 'ckmons', target: 'igtarget' };
-const LOG_KEYS = { ingredient: 'iglog', berry: 'bflog' };
+const LOG_KEYS = { ingredient: 'iglog', berry: 'bflog', skill: 'sklog' };
 const OLD = { camp: ['igcamp', 'bfcamp'], g80: ['igg80', 'bfg80'], mode: ['igmode', 'bfmode'], mon: ['igmon', 'bfmon'] };
 
 const load = (key, def) => {
@@ -75,7 +76,7 @@ function rememberMon() {
 function lastMonOf(type) {
   const saved = load(KEYS.mons, {});
   const old = { ingredient: 'igmon', berry: 'bfmon' }[type];
-  const m = (saved && typeof saved === 'object' && saved[type]) || load(old, null);
+  const m = (saved && typeof saved === 'object' && saved[type]) || (old ? load(old, null) : null);
   return typeOf(m) === type ? m : TYPES[type].DEFAULT_MON;
 }
 
@@ -109,7 +110,7 @@ export const env = () => {
   return state.type === 'ingredient' ? { ...e, target: state.target } : e;
 };
 
-// 記録はタイプごとに統合前と同じキーに保存する。食材タイプの記録は食材配列のあるものだけ使う。
+// 記録はタイプごとのキーに保存する（食材・きのみは統合前と同じキー）。食材タイプの記録は食材配列のあるものだけ使う。
 const loadRawLog = (type) => {
   const v = load(LOG_KEYS[type], []);
   return Array.isArray(v) ? v : [];

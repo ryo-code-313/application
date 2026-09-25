@@ -1,5 +1,5 @@
 /* 厳選チェッカーの配色と追加部品。レイアウトは ../css/style.css を共有する。
-   食材タイプは緑、きのみタイプは青（<html data-type="berry">）。 */
+   食材タイプは緑、きのみタイプは青（<html data-type="berry">）、スキルタイプは紫（ミュウツー版と同じ配色）。 */
 :root{
   --bg:#F3F5EC;--card:#FFFFFF;--ink:#23301C;--muted:#6B7760;--line:#DDE4D0;
   --psy:#3F7F34;--psy-soft:#E6F0DD;--tail:#C8641E;--tail-soft:#F8E6D6;--bar:#23301C;--bar-ink:#FFFFFF;--bar-muted:#BFCBB2;
@@ -28,6 +28,20 @@
   --psy:#2F6F9E;--psy-soft:#1F3140;--tail:#A33E6D;--tail-soft:#3A1F2C;--bar:#E3ECF3;--bar-ink:#131C23;--bar-muted:#687887;
   --grp:#86BCE3;}
 
+:root[data-type="skill"]{
+  --bg:#F4F0F8;--card:#FFFFFF;--ink:#2B1D3F;--muted:#7A6B8E;--line:#E2D8EC;
+  --psy:#7B3FB5;--psy-soft:#EFE4F8;--tail:#B4539C;--tail-soft:#F8E3F1;--bar:#2B1D3F;--bar-ink:#FFFFFF;--bar-muted:#C9B8DE;
+  --grp:var(--psy);
+}
+@media (prefers-color-scheme:dark){:root[data-type="skill"]:not([data-theme="light"]){
+  --bg:#150E1F;--card:#221832;--ink:#EDE6F5;--muted:#A99BBC;--line:#382A4D;
+  --psy:#7B3FB5;--psy-soft:#33224B;--tail:#B4539C;--tail-soft:#3E2139;--bar:#EDE6F5;--bar-ink:#1B1228;--bar-muted:#6E5D83;
+  --grp:#B98AF0;}}
+:root[data-type="skill"][data-theme="dark"]{
+  --bg:#150E1F;--card:#221832;--ink:#EDE6F5;--muted:#A99BBC;--line:#382A4D;
+  --psy:#7B3FB5;--psy-soft:#33224B;--tail:#B4539C;--tail-soft:#3E2139;--bar:#EDE6F5;--bar-ink:#1B1228;--bar-muted:#6E5D83;
+  --grp:#B98AF0;}
+
 .chip.tgt{border-color:var(--psy)}
 .chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
 dl.rows .grp{color:var(--grp)}
@@ -40,8 +54,8 @@ section > .natname:first-child{margin-top:0}
 
 /* タイプ切り替えのタブ。スクロールしても上に残す。 */
 .tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 8px}
-.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card);border-radius:16px;padding:4px;box-shadow:0 1px 0 var(--line)}
-.tabs [role="tab"]{font:inherit;font-weight:900;font-size:.92rem;border:none;border-radius:12px;padding:10px 4px;background:transparent;color:var(--muted);cursor:pointer;display:flex;justify-content:center;align-items:baseline;gap:6px}
+.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border-radius:16px;padding:4px;box-shadow:0 1px 0 var(--line)}
+.tabs [role="tab"]{font:inherit;font-weight:900;font-size:.88rem;line-height:1.25;border:none;border-radius:12px;padding:7px 4px;background:transparent;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
 .tabs [role="tab"] small{font-size:.68rem;font-weight:700;opacity:.8}
 .tabs [role="tab"][aria-selected="true"]{background:var(--psy);color:#fff}
 main{padding-top:12px}

@@ -1,6 +1,7 @@
 // DOM 描画とイベント配線。計算はタイプごとの calc.js のエンジンに委譲する。
 import { byId, NAT, UNLOCK } from '../../js/constants.js';
-import { fmtPct, trunc } from '../../js/format.js';
+import { fmtPct, trunc, mmss } from '../../js/format.js';
+import { eff } from '../../js/calc.js';
 import { TYPES } from './types.js';
 import { arrName, SLOT_LV } from './ingredient/constants.js';
 import { slotsOf } from './ingredient/calc.js';
@@ -31,6 +32,12 @@ const ROWS = {
     ['grp', '所持数'], ['rIng', '食材確率（満タンまで）'], ['rCap', '最大所持数'], ['rFull', '就寝時までに満タンになる確率'],
     ['rIngs', '1日に持ち帰る食材'],
     ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日エナジー'], ['rDRatio', '1日のエナジーの比（順位の基準）'], ['rPos', '全パターン中の順位'],
+  ],
+  skill: [
+    ['grp', 'おてつだい'], ['rTime', 'おてつだい時間'], ['rCut', '時間の短縮'], ['rHelps', '1日のおてつだい回数'],
+    ['rCap', '最大所持数'], ['rIng', '食材おてつだい確率'], ['rRoll', '睡眠中のスキル抽選'],
+    ['grp', 'スキル'], ['rRate', 'スキル確率'], ['rEff', '天井込みの実質確率'], ['rAvg', '発動までの平均おてつだい'], ['rAvgT', '発動までの平均時間'],
+    ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日回数'], ['rDRatio', '1日の回数の比（順位の基準）'], ['rPos', '全パターン中の順位'],
   ],
 };
 
@@ -69,7 +76,7 @@ export function initUI(engines) {
   $('tabs').innerHTML = Object.entries(TYPES).map(([t, d]) =>
     `<button role="tab" id="tab-${t}" data-type="${t}">${d.label}<small>${Object.keys(d.MONS).length}匹</small></button>`).join('');
   $('tabs').querySelectorAll('[role="tab"]').forEach((b) => {
-    b.onclick = () => { setType(b.dataset.type); syncUrl(); refresh(engines); window.scrollTo({ top: 0 }); };
+    b.onclick = () => { setType(b.dataset.type); keepNature(); syncUrl(); refresh(engines); window.scrollTo({ top: 0 }); };
   });
   // 左右キーでタブを移る。
   $('tabs').addEventListener('keydown', (e) => {
@@ -80,7 +87,7 @@ export function initUI(engines) {
     next.click();
     next.focus();
   });
-  $('mon').onchange = (e) => { setMon(e.target.value); syncUrl(); refresh(engines); };
+  $('mon').onchange = (e) => { setMon(e.target.value); keepNature(); syncUrl(); refresh(engines); };
 
   $('camp').checked = state.camp;
   $('g80').checked = state.g80;
@@ -120,6 +127,11 @@ export function initUI(engines) {
   refresh(engines);
 }
 
+// タイプが変わったら、選んでいた性格の補正をそのタイプの分類に直す（スキル補正は、きのみ・食材タイプでは「なし他」）。
+function keepNature() {
+  ['up', 'down'].forEach((k) => { if (state[k]) state[k] = def().natCat(state[k]); });
+}
+
 let shownType = null;
 
 function renderHeader() {
@@ -145,9 +157,11 @@ function renderHeader() {
   const fact = (label, value) => `<div><small>${label}</small><b>${value}</b></div>`;
   $('facts').innerHTML = fact('おてつだい', `${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}`)
     + fact('食材確率', `${+(mm.ingP * 100).toFixed(1)}%`) + fact('最大所持数', mm.cap)
-    + (state.type === 'berry' ? fact('きのみ', `×${mm.berries}`) : '');
+    + (state.type === 'berry' ? fact('きのみ', `×${mm.berries}`) : '')
+    + (state.type === 'skill' ? fact('スキル確率', `${+(mm.skillP * 100).toFixed(1)}%`) : '');
   const ings = [...new Set(mm.slots.flat().map(([i]) => mm.ings[i]))].join('／');
-  $('monInfo').textContent = state.type === 'berry' ? `${mm.berry}・食材 ${ings}` : `食材 ${ings}`;
+  $('monInfo').textContent = state.type === 'berry' ? `${mm.berry}・食材 ${ings}`
+    : state.type === 'skill' ? `スキル発動の天井 ${d.ceilOf(mm)}回・食材 ${ings}` : `食材 ${ings}`;
   $('arrSec').hidden = state.type !== 'ingredient';
   $('reset').textContent = state.type === 'ingredient' ? '食材配列・サブスキル・性格を消す' : 'サブスキル・性格を消す';
   $('rows').innerHTML = ROWS[state.type].map(([id, label]) => (id === 'grp'
@@ -201,6 +215,7 @@ function renderNat(engines) {
   const { NAT_CATS, NATL } = def();
   ['up', 'down'].forEach((k) => {
     const other = k === 'up' ? state.down : state.up;
+    $(k).classList.toggle('four', NAT_CATS.length === 4);
     $(k).innerHTML = NAT_CATS.map((c) => chipHtml(c, NATL[c], state[k] === c, c !== 'other' && other === c)).join('');
     $(k).querySelectorAll('.chip').forEach((b) => {
       b.onclick = () => {
@@ -285,6 +300,33 @@ function renderBerryStats(engine) {
   $('rDRatio').textContent = isComplete() ? `${(total / base).toFixed(2)}倍` : '—';
 }
 
+function renderSkillStats(engine) {
+  const e = env(), mm = monData();
+  const m = def().mults(currentSubs(), state.up, state.down);
+  $('cond').textContent = `${condText(m, e)}・日中は常時タップ・食材配列は全パターンの平均で計算`;
+  $('hLabel').textContent = '1日の期待発動回数';
+
+  const base = engine.baseMetric(e);
+  const r = engine.daily(m, e);
+  const total = r.day + r.night;
+  const p = eff(r.p, r.ceil);
+  const avgHelps = 1 / p;
+  $('hAll').textContent = `${total.toFixed(2)}回`;
+  $('hDay').textContent = r.day.toFixed(2);
+  $('hNight').textContent = r.night.toFixed(2);
+
+  timeRows(r, m, e);
+  $('rCap').innerHTML = `${r.cap}個<span>${e.camp ? 'チケット込み（×1.2切り上げ）' : '基礎＋サブスキル'}</span>`;
+  $('rIng').innerHTML = `${(r.ingP * 100).toFixed(1)}%<span>基礎${+(mm.ingP * 100).toFixed(2)}% × ${m.ingMul.toFixed(3)}・きのみ${m.berry}個</span>`;
+  $('rRoll').innerHTML = `${r.rolls.toFixed(1)}回<span>睡眠中${r.Hs.toFixed(1)}回のうち・満タン確率${(r.full * 100).toFixed(1)}%</span>`;
+  $('rRate').innerHTML = `${(r.p * 100).toFixed(2)}%<span>基礎${+(mm.skillP * 100).toFixed(2)}% × ${m.skillMul.toFixed(3)}</span>`;
+  $('rEff').innerHTML = `${(p * 100).toFixed(2)}%<span>${r.ceil}回目で確定を含む平均</span>`;
+  $('rAvg').textContent = `${avgHelps.toFixed(1)}回`;
+  $('rAvgT').innerHTML = `${mmss(avgHelps * r.Te * 0.45)}<span>げんき81%以上のとき</span>`;
+  $('rBase').innerHTML = `${base.toFixed(2)}回<span>無補正</span>`;
+  $('rDRatio').textContent = isComplete() ? `${(total / base).toFixed(2)}倍` : '—';
+}
+
 // One job at a time so a switch to a new condition waits behind at most one background job.
 function requestDist(engines) {
   if (inFlight) return;
@@ -347,7 +389,7 @@ function refresh(engines) {
   renderIngs(engines);
   renderSlots(engines);
   renderNat(engines);
-  if (state.type === 'ingredient') renderIngStats(engines.ingredient); else renderBerryStats(engines.berry);
+  ({ ingredient: renderIngStats, berry: renderBerryStats, skill: renderSkillStats })[state.type](engines[state.type]);
   renderBar(engines);
   renderLog(engines);
 }
