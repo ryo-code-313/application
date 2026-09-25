@@ -1,5 +1,5 @@
 // DOM 描画とイベント配線。計算は calc.js のエンジンに委譲する。
-import { PICK, byId, NAT, NATL, UNLOCK, cat } from './constants.js';
+import { PICK, byId, NAT, NATL, UNLOCK, ING, cat } from './constants.js';
 import { mults, eff, envKey, ALL_ENVS } from './calc.js';
 import { fmtPct, mmss, trunc } from './format.js';
 import {
@@ -78,7 +78,7 @@ function renderSlots(engine) {
     const used = currentSubs().filter((v, j) => j !== i && v && v !== 'none');
     return `<div class="slot"><span>Lv.${lv}</span><div class="chips" data-i="${i}">${PICK.map((id) => {
       const s = byId[id];
-      return chipHtml(id, id === 'none' ? 'なし他' : s.name, state.subs[i] === id, used.includes(id), s && s.gold ? 'hb' : '');
+      return chipHtml(id, id === 'none' ? 'なし他' : s.name, state.subs[i] === id, used.includes(id), s && s.rarity === 'gold' ? 'hb' : '');
     }).join('')}</div></div>`;
   }).join('');
   $('slots').querySelectorAll('.chips').forEach((g) => g.querySelectorAll('.chip').forEach((b) => {
@@ -93,7 +93,7 @@ function renderSlots(engine) {
 function renderNat(engine) {
   ['up', 'down'].forEach((k) => {
     const other = k === 'up' ? state.down : state.up;
-    $(k).innerHTML = ['skill', 'speed', 'other'].map((c) => chipHtml(c, NATL[c], state[k] === c, c !== 'other' && other === c)).join('');
+    $(k).innerHTML = ['skill', 'speed', 'ing', 'other'].map((c) => chipHtml(c, NATL[c], state[k] === c, c !== 'other' && other === c)).join('');
     $(k).querySelectorAll('.chip').forEach((b) => {
       b.onclick = () => {
         state[k] = state[k] === b.dataset.v ? null : b.dataset.v;
@@ -107,9 +107,9 @@ function renderNat(engine) {
 function renderStats(engine) {
   const m = mults(currentSubs(), state.up, state.down);
   const camp = state.camp, g80 = state.g80, e = env();
-  $('cond').textContent = `Lv.${state.N === 4 ? 70 : 60}・睡眠8.5時間・${g80 ? 'げんき常時81%以上' : '起床時げんき100（回復なし）'}・日中は常時タップで計算`;
+  $('cond').textContent = `Lv.${state.N === 4 ? 70 : 60}・睡眠8.5時間・${g80 ? 'げんき常時81%以上' : `起床時げんき${m.wake}から10分ごとに1減少（回復スキルなし）`}・日中は常時タップで計算`;
 
-  const r = engine.daily(m.timeMul, m.skillMul, camp, m.cap, g80, state.N);
+  const r = engine.daily(m, e);
   const base = engine.baseMetric(e);
   const total = r.day + r.night;
   const ok = isComplete();
@@ -124,9 +124,10 @@ function renderStats(engine) {
   $('rTime').innerHTML = `${Tm}分${String(Ts).padStart(2, '0')}秒<span>${camp ? 'チケット込み・' : ''}げんき補正前</span>`;
   const cut = (1 - m.timeMul) * 100;
   $('rCut').innerHTML = `${cut >= 0 ? '−' : '+'}${trunc(Math.abs(cut))}%<span>性格・サブスキル合計</span>`;
-  $('rHelps').innerHTML = `${r.Ha + r.Hs}回<span>日中${r.Ha}回・睡眠中${r.Hs}回</span>`;
+  $('rHelps').innerHTML = `${(r.Ha + r.Hs).toFixed(1)}回<span>日中${r.Ha.toFixed(1)}回・睡眠中${r.Hs.toFixed(1)}回</span>`;
   $('rCap').innerHTML = `${r.cap}個<span>${camp ? 'チケット込み（×1.2切り上げ）' : '基礎24＋サブスキル'}</span>`;
-  $('rRoll').innerHTML = `${r.rolls.toFixed(1)}回<span>睡眠中${r.Hs}回のうち・満タン確率${(r.full * 100).toFixed(1)}%</span>`;
+  $('rIng').innerHTML = `${(r.ingP * 100).toFixed(1)}%<span>きのみ${m.berry}個・食材${ING.join('/')}個</span>`;
+  $('rRoll').innerHTML = `${r.rolls.toFixed(1)}回<span>睡眠中${r.Hs.toFixed(1)}回のうち・満タン確率${(r.full * 100).toFixed(1)}%</span>`;
   $('rRate').innerHTML = `${(r.p * 100).toFixed(2)}%<span>基礎2.9% × ${m.skillMul.toFixed(3)}</span>`;
   $('rEff').innerHTML = `${(p * 100).toFixed(2)}%<span>62回目で確定を含む平均</span>`;
   $('rAvg').textContent = `${avg.toFixed(1)}回`;
