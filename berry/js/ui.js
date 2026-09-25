@@ -4,7 +4,7 @@ import { fmtPct, trunc } from '../../js/format.js';
 import { MONS, PICK, NATL, NAT_CATS, natCat } from './constants.js';
 import { mults } from './calc.js';
 import {
-  state, loadSettings, setCamp, setG80, setMode, resetSelection,
+  state, loadSettings, setCamp, setG80, setMode, setMon, resetSelection,
   currentSubs, isComplete, env, loadLog, appendLog, removeLogEntry,
 } from './state.js';
 
@@ -31,10 +31,14 @@ export function initUI(engine) {
     requestDist(engine);
   };
 
-  const mm = mon();
-  document.title = `${mm.name} 厳選チェッカー`;
-  $('monName').textContent = mm.name;
-  $('hdrBase').innerHTML = `基準 <b>${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}</b>食材確率 ${+(mm.ingP * 100).toFixed(2)}%・所持数 ${mm.cap}`;
+  $('mon').innerHTML = Object.entries(MONS).map(([k, m]) => `<option value="${k}">${m.name}</option>`).join('');
+  $('mon').value = state.mon;
+  $('mon').onchange = (e) => {
+    setMon(e.target.value);
+    // 選んだポケモンを URL にも残して、ブックマークや共有で開けるようにする。
+    try { history.replaceState(null, '', `?mon=${encodeURIComponent(state.mon)}`); } catch { /* history unavailable */ }
+    refresh(engine);
+  };
 
   $('camp').checked = state.camp;
   $('g80').checked = state.g80;
@@ -71,6 +75,14 @@ export function initUI(engine) {
   };
 
   refresh(engine);
+}
+
+function renderHeader() {
+  const mm = mon();
+  document.title = `${mm.name} 厳選チェッカー`;
+  $('monName').textContent = mm.name;
+  $('hdrBase').innerHTML = `基準 <b>${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}</b>食材確率 ${+(mm.ingP * 100).toFixed(2)}%・所持数 ${mm.cap}`;
+  $('monInfo').textContent = `${mm.berry}×${mm.berries}・食材 ${[...new Set(mm.slots.flat().map(([i]) => mm.ings[i]))].join('／')}`;
 }
 
 function renderMode() {
@@ -189,6 +201,7 @@ function renderLog(engine) {
 }
 
 function refresh(engine) {
+  renderHeader();
   renderMode();
   renderSlots(engine);
   renderNat(engine);

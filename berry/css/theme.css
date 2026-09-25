@@ -13,3 +13,5 @@ dl.rows .grp{color:var(--psy)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) dl.rows .grp{color:#86BCE3}}
 :root[data-theme="dark"] dl.rows .grp{color:#86BCE3}
 dl.rows{grid-template-columns:minmax(8.5em,1fr) auto}
+#monInfo{margin:8px 0 0}
+section > .natname:first-child{margin-top:0}
