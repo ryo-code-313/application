@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>厳選チェッカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1><span id="monName"></span><small id="typeName">厳選チェッカー</small></h1>
+    <div class="base" id="hdrBase"></div>
+  </header>
+
+  <section>
+    <div class="natname"><span>ポケモン</span><select id="mon" aria-label="ポケモン"></select></div>
+    <p class="cond" id="monInfo"></p>
+  </section>
+
+  <section id="arrSec">
+    <h2>食材配列</h2>
+    <div class="slot"><span>狙い</span><div class="chips" id="target"></div></div>
+    <div id="arr"></div>
+  </section>
+
+  <div class="mode" role="group" aria-label="対象レベル"><button data-n="3">Lv.50まで（3枠）</button><button data-n="4">Lv.70まで（4枠）</button></div>
+
+  <section>
+    <h2>サブスキル</h2>
+    <div id="slots"></div>
+  </section>
+
+  <section>
+    <h2>性格</h2>
+    <div class="slot"><span>▲上昇</span><div class="chips" id="up"></div></div>
+    <div class="slot down"><span>▼下降</span><div class="chips" id="down"></div></div>
+    <div class="natname"><span>性格名</span><select id="nat"></select></div>
+  </section>
+
+  <section>
+    <div class="perf-head"><h2>性能</h2><div class="sws"><label class="switch"><input type="checkbox" id="camp" role="switch"><span><span>いいキャンプ</span><span>チケット</span></span></label><label class="switch"><input type="checkbox" id="g80" role="switch"><span><span>げんき常時</span><span>81%以上</span></span></label></div></div>
+    <p class="cond" id="cond"></p>
+    <div class="hero">
+      <div class="stat main"><small id="hLabel">1日の狙い食材</small><b id="hAll">—</b></div>
+      <div class="stat"><small>日中</small><b id="hDay">—</b></div>
+      <div class="stat"><small>睡眠中</small><b id="hNight">—</b></div>
+    </div>
+    <dl class="rows" id="rows"></dl>
+  </section>
+
+  <section>
+    <h2>記録</h2>
+    <ul class="log" id="log"></ul>
+  </section>
+  <button class="reset" id="reset">サブスキル・性格を消す</button>
+</main>
+
+<div class="bar" role="status" aria-live="polite">
+  <div class="bar-in">
+    <div><small>無補正比</small><b id="bRatio" class="dim">—</b></div>
+    <div><small>上位</small><b id="bRank" class="dim">—</b></div>
+    <div><small>何匹に1匹</small><b id="bOdds" class="dim">—</b></div>
+    <button class="save" id="save" disabled>記録</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
