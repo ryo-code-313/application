@@ -105,12 +105,14 @@ export function daily(timeMul, skillMul, camp, cap, g80, N) {
   return { T, Te, p, h, Ha, Hs, day, night, cap: capE, rolls, full };
 }
 
+export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}`;
+
+export const ALL_ENVS = [3, 4].flatMap((N) => [true, false].flatMap((camp) => [false, true].map((g80) => ({ N, camp, g80 }))));
+
 // N・キャンプチケット・げんき条件ごとに結果をキャッシュする計算エンジンを生成する。
 export function createEngine() {
   const metricCache = new Map();
   const distCache = new Map();
-
-  const envKey = (env) => `${env.N}|${env.camp}|${env.g80}`;
 
   function metric(m, env) {
     const key = `${envKey(env)}|${m.skillMul.toFixed(6)}|${m.timeMul.toFixed(6)}|${m.cap}`;
@@ -170,8 +172,9 @@ export function createEngine() {
   }
 
   const ready = (env) => distCache.has(envKey(env));
+  const setDist = (env, d) => { distCache.set(envKey(env), d); };
 
   const atLeast = (r, env) => dist(env).reduce((a, x) => a + (x.r >= r * (1 - 1e-7) ? x.p : 0), 0);
 
-  return { metric, baseMetric, score, mults, dist, ready, atLeast, daily };
+  return { metric, baseMetric, score, mults, dist, ready, setDist, atLeast, daily };
 }

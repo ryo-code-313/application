@@ -12,6 +12,7 @@ https://ryo-code-313.github.io/application/
 - `css/style.css` — スタイル
 - `js/constants.js` — サブスキル・性格などのゲームデータ
 - `js/calc.js` — 期待値計算エンジン(DOM非依存)
+- `js/worker.js` — 上位%の分布計算をバックグラウンドで実行するWeb Worker
 - `js/format.js` — 表示用フォーマット関数
 - `js/state.js` — アプリ状態管理・localStorage永続化
 - `js/ui.js` — DOM描画・イベント処理

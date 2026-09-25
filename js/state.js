@@ -48,6 +48,32 @@ export const currentSubs = () => state.subs.slice(0, state.N);
 export const isComplete = () => currentSubs().every(Boolean) && state.up && state.down;
 export const env = () => ({ N: state.N, camp: state.camp, g80: state.g80 });
 
+// Tied to the deploy's ?v= tag so results from older calculation code are never reused.
+const DIST_VERSION = new URL(import.meta.url).searchParams.get('v');
+const DIST_PREFIX = 'm2dist:';
+
+export function loadDist(key) {
+  if (!DIST_VERSION) return null;
+  try {
+    const v = localStorage.getItem(`${DIST_PREFIX}${DIST_VERSION}:${key}`);
+    return v ? JSON.parse(v) : null;
+  } catch {
+    return null;
+  }
+}
+export function saveDist(key, dist) {
+  if (!DIST_VERSION) return;
+  try { localStorage.setItem(`${DIST_PREFIX}${DIST_VERSION}:${key}`, JSON.stringify(dist)); } catch { /* storage unavailable */ }
+}
+export function pruneOldDists() {
+  try {
+    const current = `${DIST_PREFIX}${DIST_VERSION}:`;
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(DIST_PREFIX) && !k.startsWith(current))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch { /* storage unavailable */ }
+}
+
 export function loadLog() {
   try {
     const v = localStorage.getItem(KEYS.log);
