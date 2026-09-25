@@ -1,7 +1,7 @@
 // アプリの状態管理と localStorage への永続化。キーはミュウツー版と衝突しないよう ig 接頭辞にする。
 import { MONS, DEFAULT_MON } from './constants.js';
 
-const KEYS = { camp: 'igcamp', g80: 'igg80', mode: 'igmode', log: 'iglog', target: 'igtarget' };
+const KEYS = { camp: 'igcamp', g80: 'igg80', mode: 'igmode', log: 'iglog', target: 'igtarget', mon: 'igmon' };
 
 const load = (key, def) => {
   try {
@@ -34,13 +34,27 @@ export function loadSettings() {
   state.camp = load(KEYS.camp, true) === true;
   state.g80 = load(KEYS.g80, false) === true;
   state.N = load(KEYS.mode, 3) === 4 ? 4 : 3;
+  // URL の ?mon= を優先し、なければ前回選んだポケモンにする。
+  let q = null;
+  try { q = new URLSearchParams(location.search).get('mon'); } catch { /* no location */ }
+  const has = (k) => typeof k === 'string' && Object.hasOwn(MONS, k);
+  const m = has(q) ? q : load(KEYS.mon, DEFAULT_MON);
+  selectMon(has(m) ? m : DEFAULT_MON);
+}
+
+// ポケモンを切り替えると食材配列は選び直し、狙い食材はそのポケモンで前回選んだものにする。
+function selectMon(m) {
+  state.mon = m;
+  state.arr = emptyArr(m);
   const t = load(KEYS.target, {});
-  if (t && MONS[state.mon].ings[t[state.mon]]) state.target = t[state.mon];
+  const ings = MONS[m].ings;
+  state.target = t && typeof t === 'object' && Object.hasOwn(ings, t[m]) ? t[m] : 'A';
 }
 
 export function setCamp(v) { state.camp = v; save(KEYS.camp, v); }
 export function setG80(v) { state.g80 = v; save(KEYS.g80, v); }
 export function setMode(n) { state.N = n; save(KEYS.mode, n); }
+export function setMon(m) { selectMon(m); save(KEYS.mon, m); }
 export function setTarget(ing) {
   state.target = ing;
   const t = load(KEYS.target, {});
