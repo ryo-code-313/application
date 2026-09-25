@@ -1,10 +1,11 @@
 // DOM 描画とイベント配線。計算は calc.js のエンジンに委譲する。
 import { PICK, byId, NAT, NATL, UNLOCK, cat } from './constants.js';
-import { mults, eff } from './calc.js';
+import { mults, eff, envKey, ALL_ENVS } from './calc.js';
 import { fmtPct, mmss, trunc } from './format.js';
 import {
   state, loadSettings, setCamp, setG80, setMode, resetSelection,
   currentSubs, isComplete, env, loadLog, appendLog, removeLogEntry,
+  loadDist, saveDist, pruneOldDists,
 } from './state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,6 +15,21 @@ const chipHtml = (v, label, pressed, dis, cls) =>
 
 export function initUI(engine) {
   loadSettings();
+  pruneOldDists();
+  ALL_ENVS.forEach((e) => {
+    const d = loadDist(envKey(e));
+    if (d) engine.setDist(e, d);
+  });
+  // Keeps the version tag on the worker URL so it loads the same module set as this page.
+  worker = new Worker(new URL(`./worker.js${new URL(import.meta.url).search}`, import.meta.url), { type: 'module' });
+  worker.onmessage = ({ data }) => {
+    engine.setDist(data.env, data.dist);
+    saveDist(envKey(data.env), data.dist);
+    inFlight = null;
+    renderBar(engine);
+    renderLog(engine);
+    requestDist(engine);
+  };
 
   $('camp').checked = state.camp;
   $('g80').checked = state.g80;
@@ -120,16 +136,15 @@ function renderStats(engine) {
   $('rRatio').textContent = ok ? `${m.ratio.toFixed(2)}倍` : '—';
 }
 
-let warmPending = false;
-function warm(engine) {
-  const e = env();
-  if (engine.ready(e) || warmPending) return;
-  warmPending = true;
-  setTimeout(() => {
-    try { engine.dist(e); } finally { warmPending = false; }
-    renderBar(engine);
-    renderLog(engine);
-  }, 40);
+let worker = null;
+let inFlight = null;
+// One job at a time so a switch to a new condition waits behind at most one background job.
+function requestDist(engine) {
+  if (inFlight) return;
+  const next = [env(), ...ALL_ENVS].find((e) => !engine.ready(e));
+  if (!next) return;
+  inFlight = next;
+  worker.postMessage(next);
 }
 
 function renderBar(engine) {
@@ -146,7 +161,7 @@ function renderBar(engine) {
     $('bRatio').textContent = `${r.toFixed(2)}倍`;
     $('bRank').textContent = '計算中';
     $('bOdds').textContent = '…';
-    warm(engine);
+    requestDist(engine);
     return;
   }
   const ge = engine.atLeast(r, e);
@@ -158,7 +173,7 @@ function renderBar(engine) {
 function renderLog(engine) {
   const e = env();
   const rd = engine.ready(e);
-  if (!rd) warm(engine);
+  requestDist(engine);
   const L = loadLog()
     .filter((x) => x.subs.length === state.N)
     .map((x) => {
