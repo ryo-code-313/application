@@ -50,45 +50,55 @@ export function prepare(m, env) {
   const cap0 = mon.cap + m.inv;
   const cap = env.camp ? Math.ceil(cap0 * 1.2) : cap0;
   const berry = mon.berries + m.berry;
-  return { T, Te, ingP, cap, berry, ...scheduleOf(Te, env.g80, m.wake) };
+  const energy = berryEnergy(mon.berryBase, LV);
+  return { LV, T, Te, ingP, cap, berry, energy, ...scheduleOf(Te, env.g80, m.wake) };
 }
 
-// 睡眠中 hs 回のおてつだいで持ち帰れるきのみの期待個数。
-// 所持数は睡眠開始時に0。きのみおてつだいは berry 個、食材おてつだいは amts から均等に1つ選んだ個数を拾い、
-// どちらも所持数を埋める。所持数を超える分は捨てられ、満タンになった後のおてつだいでは何も増えない。
-export function nightBerries(cap, hs, ingP, berry, amts) {
+// 起床から次の起床までの1日（日中 ha 回・睡眠中 hs 回のおてつだい）で拾うきのみと食材の期待個数。
+// 起床時に所持品を受け取るので所持数0から始まり、日中はタップしない（いつのまに育成）。
+// 満タンになるまでは、食材確率で食材おてつだい（amts から均等に1つ選んだ個数）、それ以外はきのみおてつだい。
+// 満タンになった後は食材確率に関係なくきのみだけを拾い、あふれたきのみはエナジーになる。
+// あふれた食材は捨てられる。
+// きのみ = berry × (おてつだい回数 − 満タンになる前の食材おてつだい回数) になる。
+export function dayBerries(cap, ha, hs, ingP, berry, amts) {
   let d = new Float64Array(cap), n = new Float64Array(cap);
   d[0] = 1;
-  const pb = 1 - ingP, pa = ingP / amts.length;
-  let got = 0, open = 1;
-  for (let j = 0; j < hs; j++) {
+  const pa = ingP / amts.length;
+  let open = 1, day = 0, night = 0, ings = 0, fullBed = 0;
+  for (let j = 0; j < ha + hs; j++) {
+    const got = berry * (1 - ingP * open);
+    if (j < ha) day += got; else night += got;
+    if (j === ha) fullBed = 1 - open;
     n.fill(0);
     for (let c = 0; c < cap; c++) {
       const x = d[c];
       if (!x) continue;
-      got += x * pb * Math.min(berry, cap - c);
-      if (c + berry < cap) n[c + berry] += x * pb;
-      for (const a of amts) if (c + a < cap) n[c + a] += x * pa;
+      if (c + berry < cap) n[c + berry] += x * (1 - ingP);
+      for (const a of amts) {
+        ings += x * pa * Math.min(a, cap - c);
+        if (c + a < cap) n[c + a] += x * pa;
+      }
     }
     [d, n] = [n, d];
     open = d.reduce((s, x) => s + x, 0);
   }
-  return { got, full: 1 - open };
+  if (!hs) fullBed = 1 - open;
+  return { day, night, ings, fullBed, full: 1 - open };
 }
+
+// レベル Lv のきのみ1個のエナジー。
+export const berryEnergy = (base, lv) => Math.max(base + lv - 1, Math.round(base * 1.025 ** (lv - 1)));
 
 const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 
-// 日中は常にタップするので所持数はあふれない。食材配列は入力しないので、配列ごとの値を出現確率で平均する。
-// 捨て日のあとの日ごとの値を平均する。
-function runDays(r, nightOf) {
+// 食材配列は入力しないので、配列ごとの値を出現確率で平均する。捨て日のあとの日ごとの値を平均する。
+function runDays(r, dayOf) {
   const pats = amountPatterns(MONS[r.mon]);
-  const o = { day: 0, night: 0, full: 0 };
+  const o = { day: 0, night: 0, ings: 0, fullBed: 0, full: 0 };
   r.Ha.forEach((ha, k) => {
-    o.day += ha * (1 - r.ingP) * r.berry;
     for (const { amts, p } of pats) {
-      const nt = nightOf(r.Hs[k], amts);
-      o.night += p * nt.got;
-      o.full += p * nt.full;
+      const v = dayOf(ha, r.Hs[k], amts);
+      Object.keys(o).forEach((key) => { o[key] += p * v[key]; });
     }
   });
   Object.keys(o).forEach((k) => { o[k] /= r.Ha.length; });
@@ -97,29 +107,29 @@ function runDays(r, nightOf) {
 
 export function daily(m, env) {
   const r = { ...prepare(m, env), mon: env.mon };
-  const d = runDays(r, (hs, amts) => nightBerries(r.cap, hs, r.ingP, r.berry, amts));
-  const uncapped = avg(r.Hs) * (1 - r.ingP) * r.berry;
-  return { ...r, ...d, lost: uncapped - d.night, Ha: avg(r.Ha), Hs: avg(r.Hs) };
+  const d = runDays(r, (ha, hs, amts) => dayBerries(r.cap, ha, hs, r.ingP, r.berry, amts));
+  return { ...r, ...d, Ha: avg(r.Ha), Hs: avg(r.Hs) };
 }
 
 export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}|${env.mon}`;
 
 export function createEngine() {
   const metricCache = new Map();
-  const nightCache = new Map();
+  const dayCache = new Map();
   const distCache = new Map();
 
+  // きのみのエナジー（きのみ1個のエナジー × 個数）。
   function metric(m, env) {
     const r = { ...prepare(m, env), mon: env.mon };
     const key = `${envKey(env)}|${r.Te}|${r.ingP.toFixed(8)}|${r.cap}|${r.berry}|${m.wake}`;
     if (!metricCache.has(key)) {
-      const nightOf = (hs, amts) => {
-        const k = `${env.mon}|${r.cap}|${hs}|${r.ingP.toFixed(8)}|${r.berry}|${amts.join(',')}`;
-        if (!nightCache.has(k)) nightCache.set(k, nightBerries(r.cap, hs, r.ingP, r.berry, amts));
-        return nightCache.get(k);
+      const dayOf = (ha, hs, amts) => {
+        const k = `${env.mon}|${r.cap}|${ha}|${hs}|${r.ingP.toFixed(8)}|${r.berry}|${amts.join(',')}`;
+        if (!dayCache.has(k)) dayCache.set(k, dayBerries(r.cap, ha, hs, r.ingP, r.berry, amts));
+        return dayCache.get(k);
       };
-      const d = runDays(r, nightOf);
-      metricCache.set(key, d.day + d.night);
+      const d = runDays(r, dayOf);
+      metricCache.set(key, (d.day + d.night) * r.energy);
     }
     return metricCache.get(key);
   }
