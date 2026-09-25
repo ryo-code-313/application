@@ -112,27 +112,29 @@ function renderNat(engine) {
 function renderStats(engine) {
   const e = env(), mm = mon();
   const m = mults(currentSubs(), state.up, state.down);
-  $('cond').textContent = `Lv.${state.N === 4 ? 70 : 60}・睡眠8.5時間・${e.g80 ? 'げんき常時81%以上' : `起床時げんき${m.wake}から10分ごとに1減少（回復スキルなし）`}・日中は常時タップ・食材配列は全パターンの平均で計算`;
+  $('cond').textContent = `Lv.${state.N === 4 ? 70 : 60}・睡眠8.5時間・${e.g80 ? 'げんき常時81%以上' : `起床時げんき${m.wake}から10分ごとに1減少（回復スキルなし）`}・起床時に回収して日中はタップしない（いつのまに育成）・食材配列は全パターンの平均で計算`;
 
   const base = engine.baseMetric(e);
-  $('rBase').innerHTML = `${base.toFixed(1)}個<span>無補正</span>`;
-
   const r = engine.daily(m, e);
-  const total = r.day + r.night;
-  $('hAll').textContent = `${total.toFixed(1)}個`;
-  $('hDay').textContent = r.day.toFixed(1);
-  $('hNight').textContent = r.night.toFixed(1);
+  const count = r.day + r.night;
+  const total = count * r.energy;
+  $('hAll').textContent = Math.round(total).toLocaleString();
+  $('hDay').textContent = Math.round(r.day * r.energy).toLocaleString();
+  $('hNight').textContent = Math.round(r.night * r.energy).toLocaleString();
 
   const Tm = Math.floor(r.Te / 60), Ts = Math.floor(r.Te % 60);
   $('rTime').innerHTML = `${Tm}分${String(Ts).padStart(2, '0')}秒<span>${e.camp ? 'チケット込み・' : ''}げんき補正前</span>`;
   const cut = (1 - m.timeMul) * 100;
   $('rCut').innerHTML = `${cut >= 0 ? '−' : '+'}${trunc(Math.abs(cut))}%<span>性格・サブスキル合計</span>`;
   $('rHelps').innerHTML = `${(r.Ha + r.Hs).toFixed(1)}回<span>日中${r.Ha.toFixed(1)}回・睡眠中${r.Hs.toFixed(1)}回</span>`;
-  $('rIng').innerHTML = `${(r.ingP * 100).toFixed(1)}%<span>基礎${+(mm.ingP * 100).toFixed(2)}% × ${m.ingMul.toFixed(3)}</span>`;
+  $('rEnergy').innerHTML = `${r.energy}<span>${mm.berry} Lv.${r.LV}</span>`;
   $('rAmt').innerHTML = `${r.berry}個<span>${m.berry ? `基礎${mm.berries}個＋きのみの数S` : 'きのみタイプ'}</span>`;
-  $('rBerryHelps').innerHTML = `${((r.Ha + r.Hs) * (1 - r.ingP)).toFixed(1)}回<span>所持数あふれを除く</span>`;
+  $('rCount').innerHTML = `${count.toFixed(1)}個<span>日中${r.day.toFixed(1)}個・睡眠中${r.night.toFixed(1)}個</span>`;
+  $('rIng').innerHTML = `${(r.ingP * 100).toFixed(1)}%<span>基礎${+(mm.ingP * 100).toFixed(2)}% × ${m.ingMul.toFixed(3)}</span>`;
   $('rCap').innerHTML = `${r.cap}個<span>${e.camp ? 'チケット込み' : '基礎＋サブスキル'}</span>`;
-  $('rFull').innerHTML = `${(r.full * 100).toFixed(1)}%<span>あふれたきのみ 平均${r.lost.toFixed(1)}個</span>`;
+  $('rFull').innerHTML = `${(r.fullBed * 100).toFixed(1)}%<span>起床時まで${(r.full * 100).toFixed(1)}%</span>`;
+  $('rIngs').innerHTML = `${r.ings.toFixed(1)}個<span>満タンになるまで</span>`;
+  $('rBase').innerHTML = `${Math.round(base).toLocaleString()}<span>無補正</span>`;
   $('rDRatio').textContent = isComplete() ? `${(total / base).toFixed(2)}倍` : '—';
 }
 
