@@ -29,9 +29,9 @@ jobs:
       - name: Add version to asset URLs
         run: |
           v="${GITHUB_SHA::8}"
-          sed -i -E "s#(href=\"(\.\./)?css/[a-z]+\.css)\"#\1?v=$v\"#g; s#(src=\"js/main\.js)\"#\1?v=$v\"#" index.html ingredient/index.html
-          sed -i -E "s#(from '(\./|\.\./\.\./js/)[a-z]+\.js)'#\1?v=$v'#g" js/*.js ingredient/js/*.js
-          grep -c "?v=$v" index.html js/*.js ingredient/index.html ingredient/js/*.js
+          sed -i -E "s#(href=\"(\.\./)?css/[a-z]+\.css)\"#\1?v=$v\"#g; s#(src=\"js/main\.js)\"#\1?v=$v\"#" index.html ingredient/index.html berry/index.html
+          sed -i -E "s#(from '(\./|\.\./\.\./js/)[a-z]+\.js)'#\1?v=$v'#g" js/*.js ingredient/js/*.js berry/js/*.js
+          grep -c "?v=$v" index.html js/*.js ingredient/index.html ingredient/js/*.js berry/index.html berry/js/*.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
