@@ -126,7 +126,7 @@ function warm(engine) {
   if (engine.ready(e) || warmPending) return;
   warmPending = true;
   setTimeout(() => {
-    try { engine.dist(e); engine.patterns(e); } finally { warmPending = false; }
+    try { engine.dist(e); } finally { warmPending = false; }
     renderBar(engine);
     renderLog(engine);
   }, 40);
@@ -138,7 +138,6 @@ function renderBar(engine) {
   $('save').disabled = !ok;
   if (!ok) {
     ['bRatio', 'bRank', 'bOdds'].forEach((id) => { $(id).textContent = '—'; });
-    $('bPos').textContent = '';
     return;
   }
   const e = env();
@@ -146,7 +145,6 @@ function renderBar(engine) {
   if (!engine.ready(e)) {
     $('bRatio').textContent = `${r.toFixed(2)}倍`;
     $('bRank').textContent = '計算中';
-    $('bPos').textContent = '';
     $('bOdds').textContent = '…';
     warm(engine);
     return;
@@ -154,8 +152,6 @@ function renderBar(engine) {
   const ge = engine.atLeast(r, e);
   $('bRatio').textContent = `${r.toFixed(2)}倍`;
   $('bRank').textContent = fmtPct(ge);
-  const pr = engine.patRank(r, e);
-  $('bPos').textContent = `${pr.k}位/${pr.total}`;
   $('bOdds').textContent = `${Math.round(1 / ge).toLocaleString()}匹`;
 }
 

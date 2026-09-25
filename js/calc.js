@@ -1,12 +1,6 @@
 // 期待値計算エンジン。DOM に一切触れない純粋な計算ロジックとして分離してある。
 // 呼び出し側は env = { N, camp, g80 } を明示的に渡す。
-import { BASE, P0, CEIL, SLEEP, CAP0, ING_P, ING, DAYS, SUBS, PICK, byId, NAT, cat } from './constants.js';
-
-const NAT_PAIRS = [
-  ['skill', 'speed'], ['skill', 'other'],
-  ['speed', 'skill'], ['speed', 'other'],
-  ['other', 'skill'], ['other', 'speed'], ['other', 'other'],
-];
+import { BASE, P0, CEIL, SLEEP, CAP0, ING_P, ING, DAYS, SUBS, byId, NAT, cat } from './constants.js';
 
 export const eff = (p) => (p >= 1 ? 1 : p / (1 - (1 - p) ** CEIL));
 
@@ -115,7 +109,6 @@ export function daily(timeMul, skillMul, camp, cap, g80, N) {
 export function createEngine() {
   const metricCache = new Map();
   const distCache = new Map();
-  const patternCache = new Map();
 
   const envKey = (env) => `${env.N}|${env.camp}|${env.g80}`;
 
@@ -176,37 +169,9 @@ export function createEngine() {
     return distCache.get(k);
   }
 
-  function buildPatterns(env) {
-    const n = env.N;
-    const real = PICK.filter((x) => x !== 'none');
-    const out = [];
-    const rec = (start, chosen) => {
-      const subs = [...chosen, ...Array(n - chosen.length).fill('none')];
-      NAT_PAIRS.forEach(([u, d]) => out.push(score(subs, u, d, env)));
-      if (chosen.length === n) return;
-      for (let i = start; i < real.length; i++) rec(i + 1, [...chosen, real[i]]);
-    };
-    rec(0, []);
-    return out;
-  }
-
-  function patterns(env) {
-    const k = envKey(env);
-    if (!patternCache.has(k)) patternCache.set(k, buildPatterns(env));
-    return patternCache.get(k);
-  }
-
-  const ready = (env) => {
-    const k = envKey(env);
-    return distCache.has(k) && patternCache.has(k);
-  };
-
-  const patRank = (r, env) => {
-    const P = patterns(env);
-    return { k: 1 + P.filter((x) => x > r * (1 + 1e-7)).length, total: P.length };
-  };
+  const ready = (env) => distCache.has(envKey(env));
 
   const atLeast = (r, env) => dist(env).reduce((a, x) => a + (x.r >= r * (1 - 1e-7) ? x.p : 0), 0);
 
-  return { metric, baseMetric, score, mults, dist, patterns, ready, patRank, atLeast, daily };
+  return { metric, baseMetric, score, mults, dist, ready, atLeast, daily };
 }
