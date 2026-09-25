@@ -65,3 +65,8 @@ header{margin-bottom:12px}
   .tabs-in,.bar-in{max-width:1040px}
   main{max-width:1040px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 }
+
+/* 下の帯の、上位%の下に出す順位。 */
+.bar small.pos{font-size:.62rem;margin-top:1px;white-space:nowrap}
+.bar small.pos:empty{display:none}
+.log li > div:nth-child(2){text-align:right}

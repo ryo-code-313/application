@@ -23,14 +23,14 @@ const ROWS = {
     ['grp', 'おてつだい'], ['rTime', 'おてつだい時間'], ['rCut', '時間の短縮'], ['rHelps', '1日のおてつだい回数'],
     ['grp', '食材'], ['rIng', '食材確率'], ['rAmt', '1回あたりの狙い食材'], ['rIngHelps', '1日の食材おてつだい回数'],
     ['rAllDay', '1日の全食材の個数'], ['rCap', '最大所持数'], ['rFull', '睡眠中に満タンになる確率'],
-    ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日個数'], ['rDRatio', '1日の個数の比（順位の基準）'],
+    ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日個数'], ['rDRatio', '1日の個数の比（順位の基準）'], ['rPos', '全パターン中の順位'],
   ],
   berry: [
     ['grp', 'おてつだい'], ['rTime', 'おてつだい時間'], ['rCut', '時間の短縮'], ['rHelps', '1日のおてつだい回数'],
     ['grp', 'きのみ'], ['rEnergy', 'きのみ1個のエナジー'], ['rAmt', '1回あたりのきのみ'], ['rCount', '1日のきのみの個数'],
     ['grp', '所持数'], ['rIng', '食材確率（満タンまで）'], ['rCap', '最大所持数'], ['rFull', '就寝時までに満タンになる確率'],
     ['rIngs', '1日に持ち帰る食材'],
-    ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日エナジー'], ['rDRatio', '1日のエナジーの比（順位の基準）'],
+    ['grp', '無補正個体との比較'], ['rBase', '無補正個体の1日エナジー'], ['rDRatio', '1日のエナジーの比（順位の基準）'], ['rPos', '全パターン中の順位'],
   ],
 };
 
@@ -38,6 +38,14 @@ const ROWS = {
 const scoreOf = (engine, x, e) => (state.type === 'ingredient'
   ? engine.score(x.subs, x.up, x.down, x.arr, e)
   : engine.score(x.subs, x.up, x.down, e));
+
+// 全パターン中の順位。分布は無補正比の値ごとに1行なので、自分より高い値の数 + 1 が順位になる。
+// 無補正比が同じ個体は同じ順位。分布ができてから呼ぶ。
+function rankOf(engine, r, e) {
+  const d = engine.dist(e);
+  return { pos: 1 + d.filter((x) => x.r > r * (1 + 1e-7)).length, total: d.length };
+}
+const fmtPos = ({ pos, total }) => `${pos.toLocaleString()}位 / ${total.toLocaleString()}`;
 
 let worker = null;
 let inFlight = null;
@@ -292,8 +300,10 @@ function renderBar(engines) {
   const ok = isComplete();
   ['bRatio', 'bRank', 'bOdds'].forEach((id) => $(id).classList.toggle('dim', !ok));
   $('save').disabled = !ok;
+  const setPos = (bar, row) => { $('bPos').textContent = bar; if ($('rPos')) $('rPos').innerHTML = row; };
   if (!ok) {
     ['bRatio', 'bRank', 'bOdds'].forEach((id) => { $(id).textContent = '—'; });
+    setPos('', '—');
     return;
   }
   const e = env(), engine = engines[state.type];
@@ -302,12 +312,15 @@ function renderBar(engines) {
   if (!engine.ready(e)) {
     $('bRank').textContent = '計算中';
     $('bOdds').textContent = '…';
+    setPos('', '計算中');
     requestDist(engines);
     return;
   }
   const ge = engine.atLeast(r, e);
   $('bRank').textContent = r > 0 ? fmtPct(ge) : '—';
   $('bOdds').textContent = r > 0 ? `${Math.round(1 / ge).toLocaleString()}匹` : '—';
+  const rk = rankOf(engine, r, e);
+  setPos(fmtPos(rk), `${rk.pos.toLocaleString()}位<span>${rk.total.toLocaleString()}パターン中（無補正比が同じものは同順位）</span>`);
 }
 
 function renderLog(engines) {
@@ -320,7 +333,7 @@ function renderLog(engines) {
     .sort((a, b) => b.r - a.r);
 
   $('log').innerHTML = L.length
-    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(nameOf).join('／')}　▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">上位${rd ? (x.r > 0 ? fmtPct(engine.atLeast(x.r, e)) : '—') : '計算中'}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
+    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(nameOf).join('／')}　▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : '計算中'}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
     : `<li class="empty">${state.N === 4 ? 'Lv.70まで' : 'Lv.50まで'}の記録はまだありません</li>`;
 
   $('log').querySelectorAll('.del').forEach((b) => {
