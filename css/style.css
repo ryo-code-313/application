@@ -29,6 +29,7 @@ h2{font-size:.95rem;font-weight:900;margin:0 0 10px}
 .chip.hb{border-style:dashed}
 .chip:disabled{opacity:.3;cursor:not-allowed}
 .chips.six{grid-template-columns:repeat(3,1fr)}
+.chips.four{grid-template-columns:repeat(4,1fr)}
 .stat.wide{grid-column:1/-1}
 .down .chip[aria-pressed="true"]{background:var(--tail);border-color:var(--tail)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--tail);outline-offset:2px}
