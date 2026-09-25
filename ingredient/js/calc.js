@@ -1,10 +1,9 @@
 // 食材タイプ向けの期待値計算エンジン。DOM に触れない。
 // おてつだいのタイミング（げんき・日またぎ）はミュウツー版の schedule をそのまま使う。
-// 呼び出し側は env = { N, camp, g80, base } を渡す。base はポケモンごとの基礎値
-// { time: 基準おてつだい時間(秒), ingP: 食材確率(0〜1), cap: 最大所持数, amounts: [Lv1, Lv30, Lv60 の食材個数] }。
+// 呼び出し側は env = { N, camp, g80, mon, target } を渡す。mon は MONS のキー、target は狙う食材（'A' など）。
 import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../js/constants.js';
 import { schedule, subsetDist } from '../../js/calc.js';
-import { natCat } from './constants.js';
+import { MONS, natCat, allArrs } from './constants.js';
 
 const natMul = (up, down, key, hi, lo) => (up === key ? hi : 1) * (down === key ? lo : 1);
 
@@ -33,93 +32,117 @@ export function mults(subs, up, down) {
   return mk(e, up, down);
 }
 
-export const avgAmount = (amounts) => amounts.reduce((x, y) => x + y, 0) / amounts.length;
+// 食材配列 arr の各スロットの [食材, 個数]。
+export const slotsOf = (mon, arr) => arr.map((k, i) => mon.slots[i][k]);
 
-export function prepare(m, env) {
-  const { base } = env;
-  const LV = env.N === 4 ? 70 : 60;
-  const T = Math.floor(base.time * (1 - (LV - 1) * 0.002) * m.timeMul);
-  const Te = env.camp ? T / 1.2 : T;
-  const ingP = Math.min(1, base.ingP * m.ingMul);
-  const cap0 = base.cap + m.inv;
-  const cap = env.camp ? Math.ceil(cap0 * 1.2) : cap0;
-  return { T, Te, ingP, cap, ...schedule(Te, env.g80, m.wake) };
+// おてつだいのタイミングは食材配列や食材確率に依存しないので、同じ条件の計算を使い回す。
+const schedCache = new Map();
+function scheduleOf(Te, g80, wake) {
+  const k = `${Te}|${g80}|${wake}`;
+  if (!schedCache.has(k)) schedCache.set(k, schedule(Te, g80, wake));
+  return schedCache.get(k);
 }
 
-// 睡眠中 hs 回のおてつだいで持ち帰れる食材の期待個数。
-// 所持数は睡眠開始時に0。食材おてつだいは解放済みスロットから均等に1つ選ぶ。
+export function prepare(m, env) {
+  const mon = MONS[env.mon];
+  const LV = env.N === 4 ? 70 : 60;
+  const T = Math.floor(mon.time * (1 - (LV - 1) * 0.002) * m.timeMul);
+  const Te = env.camp ? T / 1.2 : T;
+  const ingP = Math.min(1, mon.ingP * m.ingMul);
+  const cap0 = mon.cap + m.inv;
+  const cap = env.camp ? Math.ceil(cap0 * 1.2) : cap0;
+  return { T, Te, ingP, cap, ...scheduleOf(Te, env.g80, m.wake) };
+}
+
+// 睡眠中 hs 回のおてつだいで持ち帰れる食材の期待個数（狙い食材 got・全食材 all）。
+// 所持数は睡眠開始時に0。食材おてつだいは3スロットから均等に1つ選ぶ。狙い以外の食材も所持数を埋める。
 // 所持数を超える分は捨てられ、満タンになった後のおてつだいでは何も増えない。
-export function nightIngredients(cap, hs, ingP, berry, amounts) {
+export function nightIngredients(cap, hs, ingP, berry, slots, target) {
   let d = new Float64Array(cap), n = new Float64Array(cap);
   d[0] = 1;
-  const pa = ingP / amounts.length;
-  let got = 0, open = 1;
+  const pa = ingP / slots.length;
+  let got = 0, all = 0, open = 1;
   for (let j = 0; j < hs; j++) {
     n.fill(0);
     for (let c = 0; c < cap; c++) {
       const x = d[c];
       if (!x) continue;
       if (c + berry < cap) n[c + berry] += x * (1 - ingP);
-      for (const a of amounts) {
-        got += x * pa * Math.min(a, cap - c);
+      for (const [ing, a] of slots) {
+        const add = x * pa * Math.min(a, cap - c);
+        all += add;
+        if (ing === target) got += add;
         if (c + a < cap) n[c + a] += x * pa;
       }
     }
     [d, n] = [n, d];
     open = d.reduce((s, x) => s + x, 0);
   }
-  return { got, full: 1 - open };
+  return { got, all, full: 1 - open };
 }
 
 const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+const perHelp = (slots, pick) => slots.reduce((s, [ing, a]) => s + (pick(ing) ? a : 0), 0) / slots.length;
 
 // 日中は常にタップするので所持数はあふれない。捨て日のあとの日ごとの値を平均する。
-function runDays(r, m, env, nightOf) {
-  const A = avgAmount(env.base.amounts);
-  let day = 0, night = 0, full = 0;
+function runDays(r, slots, target, nightOf) {
+  const A = perHelp(slots, (ing) => ing === target);
+  const Aall = perHelp(slots, () => true);
+  const o = { day: 0, night: 0, dayAll: 0, nightAll: 0, full: 0 };
   r.Ha.forEach((ha, k) => {
     const nt = nightOf(r.Hs[k]);
-    day += ha * r.ingP * A;
-    night += nt.got;
-    full += nt.full;
+    o.day += ha * r.ingP * A;
+    o.dayAll += ha * r.ingP * Aall;
+    o.night += nt.got;
+    o.nightAll += nt.all;
+    o.full += nt.full;
   });
-  const D = r.Ha.length;
-  return { day: day / D, night: night / D, full: full / D };
+  Object.keys(o).forEach((k) => { o[k] /= r.Ha.length; });
+  return o;
 }
 
-export function daily(m, env) {
+export function daily(m, arr, env) {
   const r = prepare(m, env);
-  const nightOf = (hs) => nightIngredients(r.cap, hs, r.ingP, m.berry, env.base.amounts);
-  const d = runDays(r, m, env, nightOf);
-  const uncapped = avg(r.Hs) * r.ingP * avgAmount(env.base.amounts);
-  return { ...r, ...d, lost: uncapped - d.night, Ha: avg(r.Ha), Hs: avg(r.Hs) };
+  const slots = slotsOf(MONS[env.mon], arr);
+  const nightOf = (hs) => nightIngredients(r.cap, hs, r.ingP, m.berry, slots, env.target);
+  const d = runDays(r, slots, env.target, nightOf);
+  const uncapped = avg(r.Hs) * r.ingP * perHelp(slots, () => true);
+  return { ...r, ...d, lost: uncapped - d.nightAll, Ha: avg(r.Ha), Hs: avg(r.Hs) };
 }
 
-export const baseKey = (b) => `${b.time}|${b.ingP}|${b.cap}|${b.amounts.join(',')}`;
-export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}|${baseKey(env.base)}`;
+export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}|${env.mon}|${env.target}`;
 
 export function createEngine() {
   const metricCache = new Map();
   const distCache = new Map();
 
-  function metric(m, env) {
+  function metric(m, arr, env) {
     const r = prepare(m, env);
-    const key = `${envKey(env)}|${r.Te}|${r.ingP.toFixed(8)}|${r.cap}|${m.berry}|${m.wake}`;
+    const key = `${envKey(env)}|${arr.join('')}|${r.Te}|${r.ingP.toFixed(8)}|${r.cap}|${m.berry}|${m.wake}`;
     if (!metricCache.has(key)) {
+      const slots = slotsOf(MONS[env.mon], arr);
       const nights = new Map();
       const nightOf = (hs) => {
-        if (!nights.has(hs)) nights.set(hs, nightIngredients(r.cap, hs, r.ingP, m.berry, env.base.amounts));
+        if (!nights.has(hs)) nights.set(hs, nightIngredients(r.cap, hs, r.ingP, m.berry, slots, env.target));
         return nights.get(hs);
       };
-      const d = runDays(r, m, env, nightOf);
+      const d = runDays(r, slots, env.target, nightOf);
       metricCache.set(key, d.day + d.night);
     }
     return metricCache.get(key);
   }
 
-  const baseMetric = (env) => metric(mk(NO_SUBS, null, null), env);
-  const score = (subs, up, down, env) => metric(mults(subs, up, down), env) / baseMetric(env);
+  // 比較の基準は、無補正個体（サブスキルなし・無補正性格）のうち狙い食材が最も多く取れる食材配列。
+  function reference(env) {
+    const m = mk(NO_SUBS, null, null);
+    return allArrs(MONS[env.mon])
+      .map(({ arr }) => ({ arr, v: metric(m, arr, env) }))
+      .reduce((a, b) => (b.v > a.v ? b : a));
+  }
+  const baseMetric = (env) => reference(env).v;
+  const score = (subs, up, down, arr, env) => metric(mults(subs, up, down), arr, env) / baseMetric(env);
 
+  // 上位%の分布は、サブスキル・性格・食材配列（各スロット等確率）をすべて数え上げる。
   function buildDist(env) {
     const natCount = {};
     NAT.forEach(([, u, d]) => {
@@ -136,12 +159,16 @@ export function createEngine() {
       if (o) o.p += p; else subs.set(k, { e, p });
     }
 
+    const arrs = allArrs(MONS[env.mon]);
     const b = baseMetric(env);
     const acc = new Map();
     for (const { e, p } of subs.values()) {
       for (const [u, d, v] of natEntries) {
-        const k = (metric(mk(e, u, d), env) / b).toFixed(9);
-        acc.set(k, (acc.get(k) || 0) + p * v);
+        const m = mk(e, u, d);
+        for (const a of arrs) {
+          const k = (metric(m, a.arr, env) / b).toFixed(9);
+          acc.set(k, (acc.get(k) || 0) + p * v * a.p);
+        }
       }
     }
     return [...acc].map(([r, p]) => ({ r: +r, p }));
@@ -157,5 +184,5 @@ export function createEngine() {
   const setDist = (env, d) => { distCache.set(envKey(env), d); };
   const atLeast = (r, env) => dist(env).reduce((a, x) => a + (x.r >= r * (1 - 1e-7) ? x.p : 0), 0);
 
-  return { metric, baseMetric, score, dist, ready, setDist, atLeast, daily };
+  return { metric, reference, baseMetric, score, dist, ready, setDist, atLeast, daily };
 }
