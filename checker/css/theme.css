@@ -1,0 +1,39 @@
+/* 厳選チェッカーの配色と追加部品。レイアウトは ../css/style.css を共有する。
+   食材タイプは緑、きのみタイプは青（<html data-type="berry">）。 */
+:root{
+  --bg:#F3F5EC;--card:#FFFFFF;--ink:#23301C;--muted:#6B7760;--line:#DDE4D0;
+  --psy:#3F7F34;--psy-soft:#E6F0DD;--tail:#C8641E;--tail-soft:#F8E6D6;--bar:#23301C;--bar-ink:#FFFFFF;--bar-muted:#BFCBB2;
+  --grp:var(--psy);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11170D;--card:#1C2517;--ink:#E7EEDF;--muted:#A2AF96;--line:#33402B;
+  --psy:#3F7F34;--psy-soft:#26341F;--tail:#B2581A;--tail-soft:#3A2616;--bar:#E7EEDF;--bar-ink:#172012;--bar-muted:#6C7A60;
+  --grp:#8CCB7F;}}
+:root[data-theme="dark"]{
+  --bg:#11170D;--card:#1C2517;--ink:#E7EEDF;--muted:#A2AF96;--line:#33402B;
+  --psy:#3F7F34;--psy-soft:#26341F;--tail:#B2581A;--tail-soft:#3A2616;--bar:#E7EEDF;--bar-ink:#172012;--bar-muted:#6C7A60;
+  --grp:#8CCB7F;}
+
+:root[data-type="berry"]{
+  --bg:#EEF3F7;--card:#FFFFFF;--ink:#1B2A36;--muted:#617080;--line:#D5E0E9;
+  --psy:#2F6F9E;--psy-soft:#DDEBF5;--tail:#B8457A;--tail-soft:#F6E0EA;--bar:#1B2A36;--bar-ink:#FFFFFF;--bar-muted:#B3C2CF;
+  --grp:var(--psy);
+}
+@media (prefers-color-scheme:dark){:root[data-type="berry"]:not([data-theme="light"]){
+  --bg:#0E151B;--card:#18222B;--ink:#E3ECF3;--muted:#9AABB9;--line:#2E3D4A;
+  --psy:#2F6F9E;--psy-soft:#1F3140;--tail:#A33E6D;--tail-soft:#3A1F2C;--bar:#E3ECF3;--bar-ink:#131C23;--bar-muted:#687887;
+  --grp:#86BCE3;}}
+:root[data-type="berry"][data-theme="dark"]{
+  --bg:#0E151B;--card:#18222B;--ink:#E3ECF3;--muted:#9AABB9;--line:#2E3D4A;
+  --psy:#2F6F9E;--psy-soft:#1F3140;--tail:#A33E6D;--tail-soft:#3A1F2C;--bar:#E3ECF3;--bar-ink:#131C23;--bar-muted:#687887;
+  --grp:#86BCE3;}
+
+.chip.tgt{border-color:var(--psy)}
+.chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
+dl.rows .grp{color:var(--grp)}
+dl.rows{grid-template-columns:minmax(8.5em,1fr) auto}
+section > .natname:first-child{margin-top:0}
+#monInfo{margin:8px 0 0}
+#monInfo:empty{display:none}
+#monName .form{display:block;font-size:.9rem;letter-spacing:.02em;margin-top:2px}
+.base{white-space:nowrap}

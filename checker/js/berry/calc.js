@@ -1,8 +1,8 @@
 // きのみタイプ向けの期待値計算エンジン。DOM に触れない。
 // おてつだいのタイミング（げんき・日またぎ）はミュウツー版の schedule をそのまま使う。
 // 呼び出し側は env = { N, camp, g80, mon } を渡す。mon は MONS のキー。
-import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../js/constants.js';
-import { schedule, subsetDist } from '../../js/calc.js';
+import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../../js/constants.js';
+import { schedule, subsetDist } from '../../../js/calc.js';
 import { MONS, natCat, amountPatterns } from './constants.js';
 
 const natMul = (up, down, key, hi, lo) => (up === key ? hi : 1) * (down === key ? lo : 1);

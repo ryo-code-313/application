@@ -1,5 +1,5 @@
 // きのみタイプ版だけで使う定義。サブスキル・性格・げんきなどの共通データは ../../js/constants.js を使う。
-import { cat } from '../../js/constants.js';
+import { cat } from '../../../js/constants.js';
 
 // ポケモンごとの基礎値は mons.js にまとめる。
 export { MONS } from './mons.js';

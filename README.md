@@ -6,6 +6,8 @@
 
 https://ryo-code-313.github.io/application/
 
+食材タイプ・きのみタイプ向けの厳選チェッカーは [`checker/`](checker/README.md) にあります（https://ryo-code-313.github.io/application/checker/）。
+
 ## 構成
 
 - `index.html` — マークアップ
