@@ -1,0 +1,161 @@
+// 食材タイプ向けの期待値計算エンジン。DOM に触れない。
+// おてつだいのタイミング（げんき・日またぎ）はミュウツー版の schedule をそのまま使う。
+// 呼び出し側は env = { N, camp, g80, base } を渡す。base はポケモンごとの基礎値
+// { time: 基準おてつだい時間(秒), ingP: 食材確率(0〜1), cap: 最大所持数, amounts: [Lv1, Lv30, Lv60 の食材個数] }。
+import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../js/constants.js';
+import { schedule, subsetDist } from '../../js/calc.js';
+import { natCat } from './constants.js';
+
+const natMul = (up, down, key, hi, lo) => (up === key ? hi : 1) * (down === key ? lo : 1);
+
+// e: サブスキル効果の合計 { sp, inv, ing, berry, erb }（subsetDist の要素と同じ形）
+export function mk(e, up, down) {
+  return {
+    timeMul: natMul(up, down, 'speed', 0.9, 1.075) * (1 - Math.min(0.35, e.sp)),
+    ingMul: natMul(up, down, 'ing', 1.2, 0.8) * (1 + e.ing),
+    inv: e.inv,
+    berry: 1 + e.berry,
+    wake: e.erb ? WAKE_ENERGY_ERB : WAKE_ENERGY,
+  };
+}
+
+export const NO_SUBS = { sk: 0, sp: 0, inv: 0, ing: 0, berry: 0, erb: false };
+
+export function mults(subs, up, down) {
+  const e = subs.reduce((a, id) => {
+    const s = byId[id];
+    if (!s) return a;
+    return {
+      sk: a.sk, sp: a.sp + (s.speed || 0), inv: a.inv + (s.inv || 0), ing: a.ing + (s.ing || 0),
+      berry: a.berry + (s.berry || 0), erb: a.erb || !!s.erb,
+    };
+  }, NO_SUBS);
+  return mk(e, up, down);
+}
+
+export const avgAmount = (amounts) => amounts.reduce((x, y) => x + y, 0) / amounts.length;
+
+export function prepare(m, env) {
+  const { base } = env;
+  const LV = env.N === 4 ? 70 : 60;
+  const T = Math.floor(base.time * (1 - (LV - 1) * 0.002) * m.timeMul);
+  const Te = env.camp ? T / 1.2 : T;
+  const ingP = Math.min(1, base.ingP * m.ingMul);
+  const cap0 = base.cap + m.inv;
+  const cap = env.camp ? Math.ceil(cap0 * 1.2) : cap0;
+  return { T, Te, ingP, cap, ...schedule(Te, env.g80, m.wake) };
+}
+
+// 睡眠中 hs 回のおてつだいで持ち帰れる食材の期待個数。
+// 所持数は睡眠開始時に0。食材おてつだいは解放済みスロットから均等に1つ選ぶ。
+// 所持数を超える分は捨てられ、満タンになった後のおてつだいでは何も増えない。
+export function nightIngredients(cap, hs, ingP, berry, amounts) {
+  let d = new Float64Array(cap), n = new Float64Array(cap);
+  d[0] = 1;
+  const pa = ingP / amounts.length;
+  let got = 0, open = 1;
+  for (let j = 0; j < hs; j++) {
+    n.fill(0);
+    for (let c = 0; c < cap; c++) {
+      const x = d[c];
+      if (!x) continue;
+      if (c + berry < cap) n[c + berry] += x * (1 - ingP);
+      for (const a of amounts) {
+        got += x * pa * Math.min(a, cap - c);
+        if (c + a < cap) n[c + a] += x * pa;
+      }
+    }
+    [d, n] = [n, d];
+    open = d.reduce((s, x) => s + x, 0);
+  }
+  return { got, full: 1 - open };
+}
+
+const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+
+// 日中は常にタップするので所持数はあふれない。捨て日のあとの日ごとの値を平均する。
+function runDays(r, m, env, nightOf) {
+  const A = avgAmount(env.base.amounts);
+  let day = 0, night = 0, full = 0;
+  r.Ha.forEach((ha, k) => {
+    const nt = nightOf(r.Hs[k]);
+    day += ha * r.ingP * A;
+    night += nt.got;
+    full += nt.full;
+  });
+  const D = r.Ha.length;
+  return { day: day / D, night: night / D, full: full / D };
+}
+
+export function daily(m, env) {
+  const r = prepare(m, env);
+  const nightOf = (hs) => nightIngredients(r.cap, hs, r.ingP, m.berry, env.base.amounts);
+  const d = runDays(r, m, env, nightOf);
+  const uncapped = avg(r.Hs) * r.ingP * avgAmount(env.base.amounts);
+  return { ...r, ...d, lost: uncapped - d.night, Ha: avg(r.Ha), Hs: avg(r.Hs) };
+}
+
+export const baseKey = (b) => `${b.time}|${b.ingP}|${b.cap}|${b.amounts.join(',')}`;
+export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}|${baseKey(env.base)}`;
+
+export function createEngine() {
+  const metricCache = new Map();
+  const distCache = new Map();
+
+  function metric(m, env) {
+    const r = prepare(m, env);
+    const key = `${envKey(env)}|${r.Te}|${r.ingP.toFixed(8)}|${r.cap}|${m.berry}|${m.wake}`;
+    if (!metricCache.has(key)) {
+      const nights = new Map();
+      const nightOf = (hs) => {
+        if (!nights.has(hs)) nights.set(hs, nightIngredients(r.cap, hs, r.ingP, m.berry, env.base.amounts));
+        return nights.get(hs);
+      };
+      const d = runDays(r, m, env, nightOf);
+      metricCache.set(key, d.day + d.night);
+    }
+    return metricCache.get(key);
+  }
+
+  const baseMetric = (env) => metric(mk(NO_SUBS, null, null), env);
+  const score = (subs, up, down, env) => metric(mults(subs, up, down), env) / baseMetric(env);
+
+  function buildDist(env) {
+    const natCount = {};
+    NAT.forEach(([, u, d]) => {
+      const k = `${natCat(u)}|${natCat(d)}`;
+      natCount[k] = (natCount[k] || 0) + 1 / NAT.length;
+    });
+    const natEntries = Object.entries(natCount).map(([k, v]) => [...k.split('|'), v]);
+
+    // スキル確率アップは食材に影響しないので、それ以外の効果が同じ組み合わせをまとめる。
+    const subs = new Map();
+    for (const { e, p } of subsetDist(env.N)) {
+      const k = `${Math.min(0.35, e.sp).toFixed(4)}|${e.inv}|${e.ing.toFixed(4)}|${e.berry}|${e.erb}`;
+      const o = subs.get(k);
+      if (o) o.p += p; else subs.set(k, { e, p });
+    }
+
+    const b = baseMetric(env);
+    const acc = new Map();
+    for (const { e, p } of subs.values()) {
+      for (const [u, d, v] of natEntries) {
+        const k = (metric(mk(e, u, d), env) / b).toFixed(9);
+        acc.set(k, (acc.get(k) || 0) + p * v);
+      }
+    }
+    return [...acc].map(([r, p]) => ({ r: +r, p }));
+  }
+
+  function dist(env) {
+    const k = envKey(env);
+    if (!distCache.has(k)) distCache.set(k, buildDist(env));
+    return distCache.get(k);
+  }
+
+  const ready = (env) => distCache.has(envKey(env));
+  const setDist = (env, d) => { distCache.set(envKey(env), d); };
+  const atLeast = (r, env) => dist(env).reduce((a, x) => a + (x.r >= r * (1 - 1e-7) ? x.p : 0), 0);
+
+  return { metric, baseMetric, score, dist, ready, setDist, atLeast, daily };
+}
