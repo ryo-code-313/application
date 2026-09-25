@@ -1,19 +1,8 @@
 // 食材タイプ版だけで使う定義。サブスキル・性格・げんきなどの共通データは ../../js/constants.js を使う。
 import { cat } from '../../js/constants.js';
 
-// ポケモンごとの基礎値。slots は食材スロット（Lv.1 / Lv.30 / Lv.60）ごとの候補 [食材, 個数]。
-// 候補は個体ごとに1つ決まり（食材配列）、食材おてつだいでは3スロットから均等に1つ選ばれる。
-export const MONS = {
-  flygon: {
-    name: 'フライゴン',
-    time: 2700,
-    ingP: 0.172,
-    cap: 17,
-    ings: { A: 'つやつやアボカド', B: 'げきからハーブ', C: 'ワカクサ大豆' },
-    short: { A: 'アボカド', B: 'ハーブ', C: '大豆' },
-    slots: [[['A', 2]], [['A', 5], ['B', 6]], [['A', 7], ['B', 9], ['C', 12]]],
-  },
-};
+// ポケモンごとの基礎値は mons.js にまとめる。
+export { MONS } from './mons.js';
 export const DEFAULT_MON = 'flygon';
 
 export const SLOT_LV = ['Lv.1', 'Lv.30', 'Lv.60'];

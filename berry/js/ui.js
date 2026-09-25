@@ -80,7 +80,9 @@ export function initUI(engine) {
 function renderHeader() {
   const mm = mon();
   document.title = `${mm.name} 厳選チェッカー`;
-  $('monName').textContent = mm.name;
+  // 「キュウコン(アローラのすがた)」のような姿の名前は2行目に小さく出す。
+  const [, base, form] = mm.name.match(/^([^(]+)(?:\((.+)\))?$/);
+  $('monName').innerHTML = esc(base) + (form ? `<span class="form">${esc(form)}</span>` : '');
   $('hdrBase').innerHTML = `基準 <b>${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}</b>食材確率 ${+(mm.ingP * 100).toFixed(2)}%・所持数 ${mm.cap}`;
   $('monInfo').textContent = `${mm.berry}×${mm.berries}・食材 ${[...new Set(mm.slots.flat().map(([i]) => mm.ings[i]))].join('／')}`;
 }

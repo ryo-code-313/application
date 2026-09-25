@@ -15,3 +15,5 @@ dl.rows .grp{color:var(--psy)}
 dl.rows{grid-template-columns:minmax(8.5em,1fr) auto}
 #monInfo{margin:8px 0 0}
 section > .natname:first-child{margin-top:0}
+#monName .form{display:block;font-size:.9rem;letter-spacing:.02em;margin-top:2px}
+.base{white-space:nowrap}
