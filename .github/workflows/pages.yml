@@ -25,6 +25,13 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # Pages caches files for 10 minutes; versioned URLs keep a browser from mixing old and new modules.
+      - name: Add version to asset URLs
+        run: |
+          v="${GITHUB_SHA::8}"
+          sed -i -E "s#(href=\"css/style\.css)\"#\1?v=$v\"#; s#(src=\"js/main\.js)\"#\1?v=$v\"#" index.html
+          sed -i -E "s#(from '\./[a-z]+\.js)'#\1?v=$v'#g" js/*.js
+          grep -c "?v=$v" index.html js/*.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
