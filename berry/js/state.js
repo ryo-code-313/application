@@ -1,7 +1,7 @@
 // アプリの状態管理と localStorage への永続化。キーは他の版と衝突しないよう bf 接頭辞にする。
 import { MONS, DEFAULT_MON } from './constants.js';
 
-const KEYS = { camp: 'bfcamp', g80: 'bfg80', mode: 'bfmode', log: 'bflog' };
+const KEYS = { camp: 'bfcamp', g80: 'bfg80', mode: 'bfmode', log: 'bflog', mon: 'bfmon' };
 
 const load = (key, def) => {
   try {
@@ -29,11 +29,18 @@ export function loadSettings() {
   state.camp = load(KEYS.camp, true) === true;
   state.g80 = load(KEYS.g80, false) === true;
   state.N = load(KEYS.mode, 3) === 4 ? 4 : 3;
+  // URL の ?mon= を優先し、なければ前回選んだポケモンにする。
+  let q = null;
+  try { q = new URLSearchParams(location.search).get('mon'); } catch { /* no location */ }
+  const has = (k) => typeof k === 'string' && Object.hasOwn(MONS, k);
+  const m = has(q) ? q : load(KEYS.mon, DEFAULT_MON);
+  state.mon = has(m) ? m : DEFAULT_MON;
 }
 
 export function setCamp(v) { state.camp = v; save(KEYS.camp, v); }
 export function setG80(v) { state.g80 = v; save(KEYS.g80, v); }
 export function setMode(n) { state.N = n; save(KEYS.mode, n); }
+export function setMon(m) { state.mon = m; save(KEYS.mon, m); }
 
 export function resetSelection() {
   state.subs = [null, null, null, null];
