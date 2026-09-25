@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>食材タイプ厳選チェッカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>食材タイプ<small>厳選チェッカー</small></h1>
+    <div class="base" id="hdrBase"></div>
+  </header>
+
+  <section>
+    <h2>基礎値<small class="h2note">ポケモンごとの値（Lv.60時点で解放済みの食材）</small></h2>
+    <div class="fields">
+      <label>おてつだい時間<input data-base="time" inputmode="numeric" placeholder="例 50:00" autocomplete="off"></label>
+      <label>食材確率（%）<input data-base="ingP" inputmode="decimal" placeholder="例 20.5" autocomplete="off"></label>
+      <label>最大所持数<input data-base="cap" inputmode="numeric" placeholder="例 15" autocomplete="off"></label>
+      <label>Lv.1の食材数<input data-base="a1" inputmode="numeric" placeholder="例 2" autocomplete="off"></label>
+      <label>Lv.30の食材数<input data-base="a2" inputmode="numeric" placeholder="例 5" autocomplete="off"></label>
+      <label>Lv.60の食材数<input data-base="a3" inputmode="numeric" placeholder="例 7" autocomplete="off"></label>
+    </div>
+    <p class="err" id="baseErr" hidden>おてつだい時間は「分:秒」か秒数（10分以上）、所持数と食材数は整数で入力してください</p>
+  </section>
+
+  <div class="mode" role="group" aria-label="対象レベル"><button data-n="3">Lv.50まで（3枠）</button><button data-n="4">Lv.70まで（4枠）</button></div>
+
+  <section>
+    <h2>サブスキル</h2>
+    <div id="slots"></div>
+  </section>
+
+  <section>
+    <h2>性格</h2>
+    <div class="slot"><span>▲上昇</span><div class="chips" id="up"></div></div>
+    <div class="slot down"><span>▼下降</span><div class="chips" id="down"></div></div>
+    <div class="natname"><span>性格名</span><select id="nat"></select></div>
+  </section>
+
+  <section>
+    <div class="perf-head"><h2>性能</h2><div class="sws"><label class="switch"><input type="checkbox" id="camp" role="switch"><span><span>いいキャンプ</span><span>チケット</span></span></label><label class="switch"><input type="checkbox" id="g80" role="switch"><span><span>げんき常時</span><span>81%以上</span></span></label></div></div>
+    <p class="cond" id="cond"></p>
+    <div class="hero">
+      <div class="stat main"><small>1日の食材個数</small><b id="hAll">—</b></div>
+      <div class="stat"><small>日中</small><b id="hDay">—</b></div>
+      <div class="stat"><small>睡眠中</small><b id="hNight">—</b></div>
+    </div>
+    <dl class="rows">
+      <dt class="grp">おてつだい</dt><dd class="grp" style="display:none"></dd>
+      <dt>おてつだい時間</dt><dd id="rTime">—</dd>
+      <dt>時間の短縮</dt><dd id="rCut">—</dd>
+      <dt>1日のおてつだい回数</dt><dd id="rHelps">—</dd>
+      <dt class="grp">食材</dt><dd class="grp" style="display:none"></dd>
+      <dt>食材確率</dt><dd id="rIng">—</dd>
+      <dt>1回あたりの食材数</dt><dd id="rAmt">—</dd>
+      <dt>1日の食材おてつだい回数</dt><dd id="rIngHelps">—</dd>
+      <dt>最大所持数</dt><dd id="rCap">—</dd>
+      <dt>睡眠中に満タンになる確率</dt><dd id="rFull">—</dd>
+      <dt class="grp">無補正個体との比較</dt><dd class="grp" style="display:none"></dd>
+      <dt>無補正個体の1日個数</dt><dd id="rBase">—</dd>
+      <dt>1日の個数の比（順位の基準）</dt><dd id="rDRatio">—</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>記録</h2>
+    <ul class="log" id="log"></ul>
+  </section>
+  <button class="reset" id="reset">サブスキル・性格を消す</button>
+</main>
+
+<div class="bar" role="status" aria-live="polite">
+  <div class="bar-in">
+    <div><small>無補正比</small><b id="bRatio" class="dim">—</b></div>
+    <div><small>上位</small><b id="bRank" class="dim">—</b></div>
+    <div><small>何匹に1匹</small><b id="bOdds" class="dim">—</b></div>
+    <button class="save" id="save" disabled>記録</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
