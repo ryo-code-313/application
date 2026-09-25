@@ -8,7 +8,8 @@ import {
 const DAY_SEC = 86400;
 const AWAKE_SEC = Math.round((24 - SLEEP) * 3600);
 
-export const eff = (p) => (p >= 1 ? 1 : p / (1 - (1 - p) ** CEIL));
+// ceil は連続不発の天井。ミュウツー以外のスキルとくいでも使えるよう引数で受け取る。
+export const eff = (p, ceil = CEIL) => (p >= 1 ? 1 : p / (1 - (1 - p) ** ceil));
 
 const natMul = (up, down, key, hi, lo) => (up === key ? hi : 1) * (down === key ? lo : 1);
 
@@ -70,7 +71,8 @@ export function schedule(Te, g80, wake) {
 
 // 睡眠中のおてつだいHs回のうち、スキル抽選が行われる回数の分布。
 // 所持数が満タンになったおてつだいの後も、キューに残る QUEUE_AFTER_FULL 回は抽選される。
-export function nightRolls(cap, Hs, ingP, berry) {
+// ing は食材おてつだい1回で拾う個数の候補（食材配列の3スロット）。
+export function nightRolls(cap, Hs, ingP, berry, ing = ING) {
   const P = new Float64Array(Hs + 1);
   let d = new Float64Array(cap), n = new Float64Array(cap);
   d[0] = 1;
@@ -81,7 +83,7 @@ export function nightRolls(cap, Hs, ingP, berry) {
       const x = d[c];
       if (!x) continue;
       if (c + berry < cap) n[c + berry] += x * (1 - ingP);
-      for (const q of ING) if (c + q < cap) n[c + q] += x * ingP / ING.length;
+      for (const q of ing) if (c + q < cap) n[c + q] += x * ingP / ing.length;
     }
     [d, n] = [n, d];
     let s = 0;
@@ -111,18 +113,18 @@ export function prepare(m, env) {
 // となるだけなので、リングバッファの先頭位置 h と共通倍率 sc を動かして1回あたり O(1) で進める。
 // 睡眠中はストック数ごとに b0（ストック0）・b1（ストック1）を持ち、ストック2になった分は
 // 抽選が止まって j=0 に固定されるのでスカラー z で持つ。
-export function runDays(p, Ha, Hs, rollsOf) {
-  const L = CEIL - 1, q = 1 - p;
-  const b0 = new Float64Array(CEIL), b1 = new Float64Array(CEIL), fc = new Float64Array(CEIL);
+export function runDays(p, Ha, Hs, rollsOf, ceil = CEIL) {
+  const L = ceil - 1, q = 1 - p;
+  const b0 = new Float64Array(ceil), b1 = new Float64Array(ceil), fc = new Float64Array(ceil);
   let h = 0, sc = 1;
-  const at = (j) => (h + j) % CEIL;
+  const at = (j) => (h + j) % ceil;
   // おてつだい1回分、分布を1つずらして (1-p) 倍する。先頭 j=0 の値は呼び出し側で入れる。
   const step = () => {
     const slot = at(L);
     h = slot;
     sc *= q;
     if (sc < 1e-150) {
-      for (let k = 0; k < CEIL; k++) { b0[k] *= sc; b1[k] *= sc; }
+      for (let k = 0; k < ceil; k++) { b0[k] *= sc; b1[k] *= sc; }
       sc = 1;
     }
   };
@@ -148,7 +150,7 @@ export function runDays(p, Ha, Hs, rollsOf) {
     let A0 = 1, A1 = 0, z = 0, fz = 0, night = 0;
     fc.fill(0);
     const collect = (w) => {
-      for (let j = 0; j < CEIL; j++) { const x = at(j); fc[j] += w * (b0[x] + b1[x]) * sc; }
+      for (let j = 0; j < ceil; j++) { const x = at(j); fc[j] += w * (b0[x] + b1[x]) * sc; }
       fz += w * z;
       night += w * (A1 + 2 * z);
     };
