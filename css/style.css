@@ -54,8 +54,6 @@ select,input{font:inherit;font-weight:700;color:var(--ink);background:var(--bg);
 .bar small{display:block;font-size:.66rem;color:var(--bar-muted);font-weight:700}
 .bar b{font-size:1.35rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
 .bar b.dim{color:var(--bar-muted)}
-.bar .pos{font-size:.72rem;font-weight:700;color:var(--bar-muted);margin-left:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.rankcell b{display:inline}
 .save{font:inherit;font-weight:900;font-size:.8rem;background:var(--tail);color:#fff;border:none;border-radius:12px;padding:10px 12px;cursor:pointer}
 .save:disabled{opacity:.35}
 .memo{margin-top:10px}
