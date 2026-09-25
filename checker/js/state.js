@@ -1,9 +1,9 @@
 // アプリの状態管理と localStorage への永続化。
 // 記録と狙い食材は統合前の食材タイプ版（ig 接頭辞）・きのみタイプ版（bf 接頭辞）と同じキーを使い、以前の記録をそのまま読む。
 // 共通の設定は ck 接頭辞で持ち、まだなければ統合前の設定を引き継ぐ。
-import { TYPES, DEFAULT_MON, typeOf } from './types.js';
+import { TYPES, DEFAULT_TYPE, typeOf } from './types.js';
 
-const KEYS = { camp: 'ckcamp', g80: 'ckg80', mode: 'ckmode', mon: 'ckmon', target: 'igtarget' };
+const KEYS = { camp: 'ckcamp', g80: 'ckg80', mode: 'ckmode', mon: 'ckmon', mons: 'ckmons', target: 'igtarget' };
 const LOG_KEYS = { ingredient: 'iglog', berry: 'bflog' };
 const OLD = { camp: ['igcamp', 'bfcamp'], g80: ['igg80', 'bfg80'], mode: ['igmode', 'bfmode'], mon: ['igmon', 'bfmon'] };
 
@@ -24,10 +24,10 @@ const loadSetting = (k, def) => [KEYS[k], ...OLD[k]].reduce((v, key) => (v === u
 const emptyArr = (mon) => TYPES.ingredient.MONS[mon].slots.map((opts) => (opts.length === 1 ? 0 : null));
 
 export const state = {
-  mon: DEFAULT_MON,
-  type: 'ingredient',
-  target: 'A',
-  arr: emptyArr(DEFAULT_MON),
+  mon: TYPES[DEFAULT_TYPE].DEFAULT_MON,
+  type: DEFAULT_TYPE,
+  target: null,
+  arr: [],
   subs: [null, null, null, null],
   up: null,
   down: null,
@@ -61,14 +61,34 @@ export function loadSettings() {
   // URL の ?mon= を優先し、なければ前回選んだポケモンにする。
   let q = null;
   try { q = new URLSearchParams(location.search).get('mon'); } catch { /* no location */ }
-  const m = typeOf(q) ? q : loadSetting('mon', DEFAULT_MON);
-  selectMon(typeOf(m) ? m : DEFAULT_MON);
+  const m = typeOf(q) ? q : loadSetting('mon', TYPES[DEFAULT_TYPE].DEFAULT_MON);
+  selectMon(typeOf(m) ? m : TYPES[DEFAULT_TYPE].DEFAULT_MON);
+  rememberMon();
+}
+
+function rememberMon() {
+  const saved = load(KEYS.mons, {});
+  save(KEYS.mons, { ...(saved && typeof saved === 'object' ? saved : {}), [state.type]: state.mon });
+}
+
+// タイプごとに最後に選んだポケモン。統合前の版で選んでいたポケモンも引き継ぐ。
+function lastMonOf(type) {
+  const saved = load(KEYS.mons, {});
+  const old = { ingredient: 'igmon', berry: 'bfmon' }[type];
+  const m = (saved && typeof saved === 'object' && saved[type]) || load(old, null);
+  return typeOf(m) === type ? m : TYPES[type].DEFAULT_MON;
 }
 
 export function setCamp(v) { state.camp = v; save(KEYS.camp, v); }
 export function setG80(v) { state.g80 = v; save(KEYS.g80, v); }
 export function setMode(n) { state.N = n; save(KEYS.mode, n); }
-export function setMon(m) { selectMon(m); save(KEYS.mon, m); }
+
+export function setMon(m) {
+  selectMon(m);
+  save(KEYS.mon, m);
+  rememberMon();
+}
+export function setType(type) { if (type !== state.type) setMon(lastMonOf(type)); }
 export function setTarget(ing) {
   state.target = ing;
   const t = load(KEYS.target, {});

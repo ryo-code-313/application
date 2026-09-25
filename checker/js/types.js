@@ -4,12 +4,13 @@ import * as berry from './berry/constants.js';
 import { mults as ingMults, createEngine as ingEngine } from './ingredient/calc.js';
 import { mults as berryMults, createEngine as berryEngine } from './berry/calc.js';
 
+// 並び順はタブの順。
 export const TYPES = {
-  ingredient: { label: '食材タイプ', ...ingredient, mults: ingMults, createEngine: ingEngine },
-  berry: { label: 'きのみタイプ', ...berry, mults: berryMults, createEngine: berryEngine },
+  berry: { label: 'きのみタイプ', short: 'きのみ', ...berry, mults: berryMults, createEngine: berryEngine },
+  ingredient: { label: '食材タイプ', short: '食材', ...ingredient, mults: ingMults, createEngine: ingEngine },
 };
 
-export const DEFAULT_MON = ingredient.DEFAULT_MON;
+export const DEFAULT_TYPE = 'berry';
 
 export const typeOf = (mon) => Object.keys(TYPES).find((t) => typeof mon === 'string' && Object.hasOwn(TYPES[t].MONS, mon)) || null;
 

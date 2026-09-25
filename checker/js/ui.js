@@ -5,7 +5,7 @@ import { TYPES } from './types.js';
 import { arrName, SLOT_LV } from './ingredient/constants.js';
 import { slotsOf } from './ingredient/calc.js';
 import {
-  state, monData, loadSettings, setCamp, setG80, setMode, setMon, setTarget, resetSelection,
+  state, monData, loadSettings, setCamp, setG80, setMode, setMon, setType, setTarget, resetSelection,
   currentSubs, isComplete, env, loadLog, appendLog, removeLogEntry,
 } from './state.js';
 
@@ -54,16 +54,25 @@ export function initUI(engines) {
     requestDist(engines);
   };
 
-  $('mon').innerHTML = Object.entries(TYPES).map(([, d]) => `<optgroup label="${d.label}">${
-    Object.entries(d.MONS).map(([k, m]) => `<option value="${k}">${esc(m.name)}</option>`).join('')
-  }</optgroup>`).join('');
-  $('mon').value = state.mon;
-  $('mon').onchange = (e) => {
-    setMon(e.target.value);
-    // 選んだポケモンを URL にも残して、ブックマークや共有で開けるようにする。
+  // 選んだポケモンを URL にも残して、ブックマークや共有で開けるようにする。
+  const syncUrl = () => {
     try { history.replaceState(null, '', `?mon=${encodeURIComponent(state.mon)}`); } catch { /* history unavailable */ }
-    refresh(engines);
   };
+  $('tabs').innerHTML = Object.entries(TYPES).map(([t, d]) =>
+    `<button role="tab" id="tab-${t}" data-type="${t}">${d.label}<small>${Object.keys(d.MONS).length}匹</small></button>`).join('');
+  $('tabs').querySelectorAll('[role="tab"]').forEach((b) => {
+    b.onclick = () => { setType(b.dataset.type); syncUrl(); refresh(engines); window.scrollTo({ top: 0 }); };
+  });
+  // 左右キーでタブを移る。
+  $('tabs').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const tabs = [...$('tabs').querySelectorAll('[role="tab"]')];
+    const i = tabs.findIndex((b) => b.dataset.type === state.type);
+    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    next.click();
+    next.focus();
+  });
+  $('mon').onchange = (e) => { setMon(e.target.value); syncUrl(); refresh(engines); };
 
   $('camp').checked = state.camp;
   $('g80').checked = state.g80;
@@ -103,18 +112,34 @@ export function initUI(engines) {
   refresh(engines);
 }
 
+let shownType = null;
+
 function renderHeader() {
   const mm = monData(), d = def();
   document.documentElement.dataset.type = state.type;
-  document.title = `${mm.name} 厳選チェッカー`;
+  document.title = `${mm.name} ${d.label} 厳選チェッカー`;
+  $('tabs').querySelectorAll('[role="tab"]').forEach((b) => {
+    const on = b.dataset.type === state.type;
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+  });
+  // ポケモンの一覧は今のタイプのものだけにする。
+  if (shownType !== state.type) {
+    shownType = state.type;
+    $('mon').innerHTML = Object.entries(d.MONS).map(([k, m]) => `<option value="${k}">${esc(m.name)}</option>`).join('');
+  }
+  $('mon').value = state.mon;
+
   // 「キュウコン(アローラのすがた)」のような姿の名前は2行目に小さく出す。
   const [, base, form] = mm.name.match(/^([^(]+)(?:\((.+)\))?$/);
   $('monName').innerHTML = esc(base) + (form ? `<span class="form">${esc(form)}</span>` : '');
   $('typeName').textContent = `${d.label} 厳選チェッカー`;
-  $('hdrBase').innerHTML = `基準 <b>${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}</b>食材確率 ${+(mm.ingP * 100).toFixed(2)}%・所持数 ${mm.cap}`;
-  $('monInfo').textContent = state.type === 'berry'
-    ? `${mm.berry}×${mm.berries}・食材 ${[...new Set(mm.slots.flat().map(([i]) => mm.ings[i]))].join('／')}`
-    : '';
+  const fact = (label, value) => `<div><small>${label}</small><b>${value}</b></div>`;
+  $('facts').innerHTML = fact('おてつだい', `${Math.floor(mm.time / 60)}:${String(mm.time % 60).padStart(2, '0')}`)
+    + fact('食材確率', `${+(mm.ingP * 100).toFixed(1)}%`) + fact('最大所持数', mm.cap)
+    + (state.type === 'berry' ? fact('きのみ', `×${mm.berries}`) : '');
+  const ings = [...new Set(mm.slots.flat().map(([i]) => mm.ings[i]))].join('／');
+  $('monInfo').textContent = state.type === 'berry' ? `${mm.berry}・食材 ${ings}` : `食材 ${ings}`;
   $('arrSec').hidden = state.type !== 'ingredient';
   $('reset').textContent = state.type === 'ingredient' ? '食材配列・サブスキル・性格を消す' : 'サブスキル・性格を消す';
   $('rows').innerHTML = ROWS[state.type].map(([id, label]) => (id === 'grp'

@@ -31,9 +31,37 @@
 .chip.tgt{border-color:var(--psy)}
 .chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
 dl.rows .grp{color:var(--grp)}
-dl.rows{grid-template-columns:minmax(8.5em,1fr) auto}
+dl.rows{grid-template-columns:minmax(8.5em,1fr) auto;column-gap:0}
+dl.rows dd{padding-left:12px}
 section > .natname:first-child{margin-top:0}
 #monInfo{margin:8px 0 0}
 #monInfo:empty{display:none}
 #monName .form{display:block;font-size:.9rem;letter-spacing:.02em;margin-top:2px}
-.base{white-space:nowrap}
+
+/* タイプ切り替えのタブ。スクロールしても上に残す。 */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 8px}
+.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card);border-radius:16px;padding:4px;box-shadow:0 1px 0 var(--line)}
+.tabs [role="tab"]{font:inherit;font-weight:900;font-size:.92rem;border:none;border-radius:12px;padding:10px 4px;background:transparent;color:var(--muted);cursor:pointer;display:flex;justify-content:center;align-items:baseline;gap:6px}
+.tabs [role="tab"] small{font-size:.68rem;font-weight:700;opacity:.8}
+.tabs [role="tab"][aria-selected="true"]{background:var(--psy);color:#fff}
+main{padding-top:12px}
+header{margin-bottom:12px}
+
+/* ポケモンの基礎値。 */
+.mon .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:6px;margin-top:10px}
+.facts div{background:var(--psy-soft);border-radius:12px;padding:7px 4px;text-align:center}
+.facts small{display:block;font-size:.66rem;font-weight:700;color:var(--muted)}
+.facts b{font-size:1rem;font-weight:900;font-variant-numeric:tabular-nums}
+.mon .natname{margin-top:0}
+
+/* サブスキル見出しの横に置く対象レベルの切り替え。 */
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.sec-head h2{margin:0}
+.sec-head .mode{margin:0;background:var(--bg);border-radius:12px;padding:3px;gap:3px}
+.sec-head .mode button{font-size:.75rem;padding:6px 10px;border-radius:9px}
+
+/* 広い画面では入力を左、結果を右に並べる。 */
+@media (min-width:960px){
+  .tabs-in,.bar-in{max-width:1040px}
+  main{max-width:1040px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+}
