@@ -54,6 +54,15 @@ function rankOf(engine, r, e) {
   const d = engine.dist(e);
   return { pos: 1 + d.filter((x) => x.r > r * (1 + 1e-7)).length, total: d.length };
 }
+// 数値に小さめの単位を付ける（帯とヒーローの大きな数字用）。
+const withUnit = (v, u) => `${v}<span class="u">${u}</span>`;
+// 「何匹に1匹」。帯に収まるよう10万以上は万・億単位にする。
+const fmtOdds = (n) => {
+  if (n < 1e5) return withUnit(Math.round(n).toLocaleString(), '匹');
+  if (n < 1e7) return withUnit((n / 1e4).toFixed(1), '万匹');
+  if (n < 1e8) return withUnit(Math.round(n / 1e4).toLocaleString(), '万匹');
+  return withUnit((n / 1e8).toFixed(1), '億匹');
+};
 const fmtPos = ({ pos, total }) => `${pos.toLocaleString()}位 / ${total.toLocaleString()}`;
 
 let worker = null;
@@ -348,7 +357,7 @@ function renderIngStats(engine) {
   const total = r.day + r.night;
   const tAmt = slots.reduce((s, [ing, a]) => s + (ing === state.target ? a : 0), 0) / slots.length;
   const allAmt = slots.reduce((s, [, a]) => s + a, 0) / slots.length;
-  $('hAll').textContent = `${total.toFixed(1)}個`;
+  $('hAll').innerHTML = withUnit(total.toFixed(1), '個');
   $('hDay').textContent = r.day.toFixed(1);
   $('hNight').textContent = r.night.toFixed(1);
   setSplit(r.day, r.night);
@@ -396,7 +405,7 @@ function renderSkillStats(engine) {
   const total = r.day + r.night;
   const p = eff(r.p, r.ceil);
   const avgHelps = 1 / p;
-  $('hAll').textContent = `${total.toFixed(2)}回`;
+  $('hAll').innerHTML = withUnit(total.toFixed(2), '回');
   $('hDay').textContent = r.day.toFixed(2);
   $('hNight').textContent = r.night.toFixed(2);
   setSplit(r.day, r.night);
@@ -436,7 +445,7 @@ function renderBar(engines) {
   }
   const e = env(), engine = engines[state.type];
   const r = scoreOf(engine, { subs: currentSubs(), up: state.up, down: state.down, arr: state.arr }, e);
-  $('bRatio').textContent = `${r.toFixed(2)}倍`;
+  $('bRatio').innerHTML = withUnit(r.toFixed(2), '倍');
   if (!engine.ready(e)) {
     $('bRank').textContent = pendingText();
     $('bOdds').textContent = '…';
@@ -445,8 +454,8 @@ function renderBar(engines) {
     return;
   }
   const ge = engine.atLeast(r, e);
-  $('bRank').textContent = r > 0 ? fmtPct(ge) : '—';
-  $('bOdds').textContent = r > 0 ? `${Math.round(1 / ge).toLocaleString()}匹` : '—';
+  $('bRank').innerHTML = r > 0 ? withUnit(fmtPct(ge).slice(0, -1), '%') : '—';
+  $('bOdds').innerHTML = r > 0 ? fmtOdds(1 / ge) : '—';
   const rk = rankOf(engine, r, e);
   setPos(fmtPos(rk), `${rk.pos.toLocaleString()}位<span>${rk.total.toLocaleString()}パターン中（無補正比が同じものは同順位）</span>`);
 }

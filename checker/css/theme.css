@@ -1,6 +1,6 @@
 /* 厳選チェッカーの見た目「夜のノート」。レイアウトの土台は ../css/style.css で、ここで上書きする。
    生成りの紙の地に夜空色の文字。タイプの色（きのみ=青・食材=緑・スキル=紫）はアクセントにだけ使う（<html data-type>）。
-   文字は Zen Kaku Gothic New。数字を見せる部分（基礎値・結果・倍率・順位など）だけ Space Grotesk にする。 */
+   文字は Zen Kaku Gothic New。数字を見せる部分（基礎値・結果・倍率・順位など）だけ Outfit にする（字幅が詰まっていて、1 に癖がない）。 */
 
 /* 共通の色。 */
 :root{
@@ -44,11 +44,13 @@
 :root[data-type="skill"][data-theme="dark"]{--psy-soft:#2B2140;--psy-ink:#D2BBF2;--grp:#B98AF0}
 
 /* 文字。 */
-:root{--font-jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;--font-num:"Space Grotesk",var(--font-jp)}
+:root{--font-jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;--font-num:"Outfit",var(--font-jp)}
 body{font-family:var(--font-jp);background:var(--bg);color:var(--ink)}
-/* 数字を見せる部分。日本語が混ざっても Space Grotesk にない字は Zen Kaku Gothic New で出る。 */
+/* 数字を見せる部分。日本語が混ざっても Outfit にない字は Zen Kaku Gothic New で出る。 */
 .facts b,.hero .stat b,dl.rows dd,.log b,.bar b,.bar small.pos,.subslot small,.dlg-tabs small,.pick i{font-family:var(--font-num);font-variant-numeric:tabular-nums}
 dl.rows dd span{font-family:var(--font-jp)}
+/* 大きな数字に付ける単位（倍・%・匹・個・回）は小さくして数字を目立たせ、幅も詰める。 */
+.u{font-size:.6em;font-weight:700;margin-left:.08em}
 
 /* カード。 */
 section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 14px;margin-bottom:14px}
@@ -135,7 +137,8 @@ section>.natname:first-child{margin-top:0}
 .hero .stat small{color:#fff;opacity:.9;font-size:.75rem;font-weight:700}
 .hero .stat b{font-size:1.05rem;font-weight:700}
 .hero .stat.main{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:none}
-.hero .stat.main b{font-size:2.6rem;font-weight:700;line-height:1}
+.hero .stat.main b{font-size:2.8rem;font-weight:700;line-height:1}
+.hero .stat.main b .u{font-size:.5em}
 .hero .stat:last-child{justify-content:flex-end}
 .split{grid-column:1/-1;height:8px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden}
 .split i{display:block;height:100%;width:0;background:#fff;border-radius:999px}
@@ -154,13 +157,13 @@ dl.rows dt.grp:first-child{padding-top:2px}
 
 /* 下の帯。画面の端から浮かせた夜空色の帯。 */
 .bar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));border-radius:20px;padding:12px 12px 12px 18px;box-shadow:var(--shadow)}
-.bar-in{grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px}
+.bar-in{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr) minmax(0,1fr) auto;gap:10px}
 .bar small{font-size:.66rem}
-.bar b{font-size:1.4rem;font-weight:700}
+.bar b{font-size:clamp(1.1rem,5.4vw,1.5rem);font-weight:700;letter-spacing:-.01em}
 .bar small.pos{font-size:.64rem;margin-top:1px;white-space:nowrap}
 .bar small.pos:empty{display:none}
 .save{background:var(--save);color:#1D1B2C;border-radius:14px;min-height:48px;padding:0 16px;font-size:.9rem}
-@media (max-width:380px){.bar{padding-left:14px}.bar-in{gap:10px}.bar b{font-size:1.15rem}}
+@media (max-width:380px){.bar{padding-left:14px}.bar-in{gap:8px}}
 
 /* 広い画面では入力を左、結果を右に並べる。 */
 @media (min-width:960px){
