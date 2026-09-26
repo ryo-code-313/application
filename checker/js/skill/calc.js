@@ -1,5 +1,5 @@
 // スキルタイプ向けの期待値計算エンジン。DOM に触れない。
-// ミュウツー版の計算（げんきとおてつだいのタイミング・睡眠中の抽選回数・天井カウンタ）を、
+// 共通の計算（../../../js/calc.js のげんきとおてつだいのタイミング・睡眠中の抽選回数・天井カウンタ）を、
 // ポケモンごとの基礎値・天井・食材の個数で使う。呼び出し側は env = { N, camp, g80, mon } を渡す。
 import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../../js/constants.js';
 import { schedule, nightRolls, runDays, subsetDist } from '../../../js/calc.js';

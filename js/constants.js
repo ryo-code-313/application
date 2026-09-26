@@ -1,11 +1,5 @@
 // ゲーム定数とサブスキル・性格の定義。数値の意味と出典は README.md を参照。
-export const BASE = 2300;
-export const P0 = 0.029;
-export const CEIL = 62;
 export const SLEEP = 8.5;
-export const CAP0 = 24;
-export const ING_P = 0.16;
-export const ING = [1, 2, 4];
 export const UNLOCK = [10, 25, 50, 70];
 
 // げんきはおてつだい中・睡眠中を問わず10分ごとに1減る。起床時は睡眠回復で100（げんき回復ボーナス持ちは105）。
@@ -46,7 +40,6 @@ export const SUBS = [
   { id: 'xSlvS', rarity: 'blue' },
 ];
 
-export const PICK = ['skM', 'skS', 'spM', 'spS', 'hb', 'berry', 'invS', 'invM', 'invL', 'ingM', 'ingS', 'erb', 'none'];
 
 export const byId = Object.fromEntries(SUBS.map((s) => [s.id, s]));
 
@@ -59,7 +52,6 @@ export const NAT = [
   ['がんばりや', null, null], ['すなお', null, null], ['てれや', null, null], ['きまぐれ', null, null], ['まじめ', null, null],
 ];
 
-export const NATL = { skill: 'スキル', speed: 'おてスピ', ing: '食材', other: 'なし他' };
 
 export function cat(s) {
   if (s === 'sp' || s === 'speed') return 'speed';

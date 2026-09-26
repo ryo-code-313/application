@@ -1,31 +1,14 @@
-// 期待値計算エンジン。DOM に一切触れない純粋な計算ロジックとして分離してある。
-// 呼び出し側は env = { N, camp, g80 } を明示的に渡す。
+// 3タイプの計算エンジン（checker/js/*/calc.js）が共有する計算。DOM に一切触れない。
+// げんきとおてつだいのタイミング、睡眠中のスキル抽選回数、天井カウンタ、サブスキルの抽選分布。
 import {
-  BASE, P0, CEIL, SLEEP, CAP0, ING_P, ING, ENERGY_TICK, WAKE_ENERGY, WAKE_ENERGY_ERB, ENERGY_BANDS,
-  QUEUE_AFTER_FULL, WARMUP_DAYS, CHAIN_WARMUP, DAYS, RARITY_P, SUBS, byId, NAT, cat,
+  SLEEP, ENERGY_TICK, WAKE_ENERGY, ENERGY_BANDS, QUEUE_AFTER_FULL, WARMUP_DAYS, CHAIN_WARMUP, DAYS, RARITY_P, SUBS,
 } from './constants.js';
 
 const DAY_SEC = 86400;
 const AWAKE_SEC = Math.round((24 - SLEEP) * 3600);
 
-// ceil は連続不発の天井。ミュウツー以外のスキルとくいでも使えるよう引数で受け取る。
-export const eff = (p, ceil = CEIL) => (p >= 1 ? 1 : p / (1 - (1 - p) ** ceil));
-
-const natMul = (up, down, key, hi, lo) => (up === key ? hi : 1) * (down === key ? lo : 1);
-
-// e: サブスキル効果の合計 { sk, sp, inv, ing, berry, erb }
-export function mk(e, up, down) {
-  const skillMul = natMul(up, down, 'skill', 1.2, 0.8) * (1 + e.sk);
-  const timeMul = natMul(up, down, 'speed', 0.9, 1.075) * (1 - Math.min(0.35, e.sp));
-  const ingMul = natMul(up, down, 'ing', 1.2, 0.8) * (1 + e.ing);
-  return {
-    skillMul, timeMul, ingMul,
-    cap: CAP0 + e.inv,
-    berry: 1 + e.berry,
-    wake: e.erb ? WAKE_ENERGY_ERB : WAKE_ENERGY,
-    ratio: eff(P0 * skillMul) / eff(P0) / timeMul,
-  };
-}
+// 天井込みの実質スキル確率。ceil は連続不発の天井（ポケモンごとに違う）。
+export const eff = (p, ceil) => (p >= 1 ? 1 : p / (1 - (1 - p) ** ceil));
 
 const NO_SUBS = { sk: 0, sp: 0, inv: 0, ing: 0, berry: 0, erb: false };
 
@@ -38,10 +21,6 @@ function addSub(e, s) {
     berry: e.berry + (s.berry || 0),
     erb: e.erb || !!s.erb,
   };
-}
-
-export function mults(subs, up, down) {
-  return mk(subs.reduce((e, id) => (byId[id] ? addSub(e, byId[id]) : e), NO_SUBS), up, down);
 }
 
 export const band = (e) => ENERGY_BANDS.find(([min]) => e >= min)[1];
@@ -72,7 +51,7 @@ export function schedule(Te, g80, wake) {
 // 睡眠中のおてつだいHs回のうち、スキル抽選が行われる回数の分布。
 // 所持数が満タンになったおてつだいの後も、キューに残る QUEUE_AFTER_FULL 回は抽選される。
 // ing は食材おてつだい1回で拾う個数の候補（食材配列の3スロット）。
-export function nightRolls(cap, Hs, ingP, berry, ing = ING) {
+export function nightRolls(cap, Hs, ingP, berry, ing) {
   const P = new Float64Array(Hs + 1);
   let d = new Float64Array(cap), n = new Float64Array(cap);
   d[0] = 1;
@@ -95,17 +74,6 @@ export function nightRolls(cap, Hs, ingP, berry, ing = ING) {
   return { P, full: 1 - open };
 }
 
-// 性能値から、1日のおてつだい回数（日ごと）と各種確率を求める。
-export function prepare(m, env) {
-  const LV = env.N === 4 ? 70 : 60;
-  const T = Math.floor(BASE * (1 - (LV - 1) * 0.002) * m.timeMul);
-  const Te = env.camp ? T / 1.2 : T;
-  const p = Math.min(1, P0 * m.skillMul);
-  const ingP = Math.min(1, ING_P * m.ingMul);
-  const cap = env.camp ? Math.ceil(m.cap * 1.2) : m.cap;
-  return { T, Te, p, ingP, cap, ...schedule(Te, env.g80, m.wake) };
-}
-
 // 天井カウンタの分布を日ごとに追い、捨て日のあとの DAYS 日分の平均発動回数を返す。
 // rollsOf(hs) は睡眠中 hs 回のおてつだいに対する nightRolls の結果。
 //
@@ -113,7 +81,7 @@ export function prepare(m, env) {
 // となるだけなので、リングバッファの先頭位置 h と共通倍率 sc を動かして1回あたり O(1) で進める。
 // 睡眠中はストック数ごとに b0（ストック0）・b1（ストック1）を持ち、ストック2になった分は
 // 抽選が止まって j=0 に固定されるのでスカラー z で持つ。
-export function runDays(p, Ha, Hs, rollsOf, ceil = CEIL) {
+export function runDays(p, Ha, Hs, rollsOf, ceil) {
   const L = ceil - 1, q = 1 - p;
   const b0 = new Float64Array(ceil), b1 = new Float64Array(ceil), fc = new Float64Array(ceil);
   let h = 0, sc = 1;
@@ -185,22 +153,6 @@ export function runDays(p, Ha, Hs, rollsOf, ceil = CEIL) {
   return { day: sumDay / DAYS, night: sumNight / DAYS, rolls: sumRolls / DAYS, full: sumFull / DAYS };
 }
 
-const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-
-export function daily(m, env) {
-  const r = prepare(m, env);
-  const rolls = new Map();
-  const rollsOf = (hs) => {
-    if (!rolls.has(hs)) rolls.set(hs, nightRolls(r.cap, hs, r.ingP, m.berry));
-    return rolls.get(hs);
-  };
-  return { ...r, ...runDays(r.p, r.Ha, r.Hs, rollsOf), Ha: avg(r.Ha), Hs: avg(r.Hs) };
-}
-
-export const envKey = (env) => `${env.N}|${env.camp}|${env.g80}`;
-
-export const ALL_ENVS = [3, 4].flatMap((N) => [true, false].flatMap((camp) => [false, true].map((g80) => ({ N, camp, g80 }))));
-
 // サブスキルN枠の効果合計の分布。1枠ごとに色を RARITY_P で抽選し、
 // その色の中で未所持のものから均等に選ぶ（重複なし）。
 export function subsetDist(n) {
@@ -226,72 +178,4 @@ export function subsetDist(n) {
   };
   rec(0, 0, 1, NO_SUBS);
   return [...out.values()];
-}
-
-// N・キャンプチケット・げんき条件ごとに結果をキャッシュする計算エンジンを生成する。
-export function createEngine() {
-  const metricCache = new Map();
-  const distCache = new Map();
-
-  // 睡眠中の抽選回数分布が同じ（例: 所持数が満タンにならない）個体は結果も同じなので、
-  // 分布の中身をキーにして計算を共有する。
-  const rollsCache = new Map();
-  const rollsIds = new Map();
-  function rollsFor(cap, hs, ingP, berry) {
-    const key = `${cap}|${hs}|${ingP.toFixed(6)}|${berry}`;
-    if (!rollsCache.has(key)) {
-      const r = nightRolls(cap, hs, ingP, berry);
-      const sig = Array.from(r.P, (x) => x.toFixed(12)).join(',');
-      if (!rollsIds.has(sig)) rollsIds.set(sig, rollsIds.size);
-      rollsCache.set(key, { ...r, id: rollsIds.get(sig) });
-    }
-    return rollsCache.get(key);
-  }
-
-  function metric(m, env) {
-    const r = prepare(m, env);
-    const rollsOf = (hs) => rollsFor(r.cap, hs, r.ingP, m.berry);
-    const key = `${envKey(env)}|${r.p.toFixed(8)}|${r.Ha.join(',')}|${r.Hs.map((hs) => rollsOf(hs).id).join(',')}`;
-    if (!metricCache.has(key)) {
-      const d = runDays(r.p, r.Ha, r.Hs, rollsOf);
-      metricCache.set(key, d.day + d.night);
-    }
-    return metricCache.get(key);
-  }
-
-  const baseMetric = (env) => metric(mk(NO_SUBS, null, null), env);
-  const score = (subs, up, down, env) => metric(mults(subs, up, down), env) / baseMetric(env);
-
-  function buildDist(env) {
-    const natCount = {};
-    NAT.forEach(([, u, d]) => {
-      const k = `${cat(u)}|${cat(d)}`;
-      natCount[k] = (natCount[k] || 0) + 1 / NAT.length;
-    });
-    const natEntries = Object.entries(natCount).map(([k, v]) => [...k.split('|'), v]);
-
-    const b = baseMetric(env);
-    const acc = new Map();
-    for (const { e, p } of subsetDist(env.N)) {
-      for (const [u, d, v] of natEntries) {
-        const r = metric(mk(e, u, d), env) / b;
-        const k = r.toFixed(9);
-        acc.set(k, (acc.get(k) || 0) + p * v);
-      }
-    }
-    return [...acc].map(([r, p]) => ({ r: +r, p }));
-  }
-
-  function dist(env) {
-    const k = envKey(env);
-    if (!distCache.has(k)) distCache.set(k, buildDist(env));
-    return distCache.get(k);
-  }
-
-  const ready = (env) => distCache.has(envKey(env));
-  const setDist = (env, d) => { distCache.set(envKey(env), d); };
-
-  const atLeast = (r, env) => dist(env).reduce((a, x) => a + (x.r >= r * (1 - 1e-7) ? x.p : 0), 0);
-
-  return { metric, baseMetric, score, mults, dist, ready, setDist, atLeast, daily };
 }
