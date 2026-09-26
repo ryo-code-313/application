@@ -59,7 +59,22 @@ function selectMon(m) {
   state.target = t && typeof t === 'object' && Object.hasOwn(ings, t[m]) ? t[m] : 'A';
 }
 
+// 統合前のミュウツー版の記録（m2log）を、スキルタイプのミュウツーの記録として一度だけ引き継ぐ。
+// サブスキルの ID と性格の分類（スキル・おてスピ・食材・なし他）はスキルタイプと同じ。元の m2log は残す。
+function moveMewtwoLog() {
+  if (load('ckm2moved', false) === true) return;
+  const old = load('m2log', []);
+  if (Array.isArray(old) && old.length) {
+    const cur = loadRawLog('skill');
+    const seen = new Set(cur.map((x) => String(x && x.t)));
+    const moved = old.filter((x) => x && Array.isArray(x.subs) && !seen.has(String(x.t))).map((x) => ({ ...x, mon: 'mewtwo' }));
+    save(LOG_KEYS.skill, [...cur, ...moved]);
+  }
+  save('ckm2moved', true);
+}
+
 export function loadSettings() {
+  moveMewtwoLog();
   state.camp = loadSetting('camp', true) === true;
   state.g80 = loadSetting('g80', false) === true;
   state.N = loadSetting('mode', 3) === 4 ? 4 : 3;

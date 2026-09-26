@@ -1,5 +1,5 @@
 // 食材タイプ向けの期待値計算エンジン。DOM に触れない。
-// おてつだいのタイミング（げんき・日またぎ）はミュウツー版の schedule をそのまま使う。
+// おてつだいのタイミング（げんき・日またぎ）は共通の schedule（../../../js/calc.js）を使う。
 // 呼び出し側は env = { N, camp, g80, mon, target } を渡す。mon は MONS のキー、target は狙う食材（'A' など）。
 import { WAKE_ENERGY, WAKE_ENERGY_ERB, NAT, byId } from '../../../js/constants.js';
 import { schedule, subsetDist } from '../../../js/calc.js';
