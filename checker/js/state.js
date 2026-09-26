@@ -3,6 +3,7 @@
 // スキルタイプの記録は sklog に保存する。
 // 共通の設定は ck 接頭辞で持ち、まだなければ統合前の設定を引き継ぐ。
 import { TYPES, DEFAULT_TYPE, typeOf } from './types.js';
+import { natByName } from './picker.js';
 
 const KEYS = { camp: 'ckcamp', g80: 'ckg80', mode: 'ckmode', mon: 'ckmon', mons: 'ckmons', target: 'igtarget' };
 const LOG_KEYS = { ingredient: 'iglog', berry: 'bflog', skill: 'sklog' };
@@ -30,6 +31,8 @@ export const state = {
   target: null,
   arr: [],
   subs: [null, null, null, null],
+  // 性格は名前で選び、上昇・下降の補正はそのタイプの分類（natCat）に直して up・down に持つ。
+  nat: null,
   up: null,
   down: null,
   N: 3,
@@ -44,6 +47,7 @@ export const monData = () => TYPES[state.type].MONS[state.mon];
 function selectMon(m) {
   state.mon = m;
   state.type = typeOf(m);
+  syncNature();
   if (state.type !== 'ingredient') {
     state.arr = [];
     state.target = null;
@@ -96,11 +100,22 @@ export function setTarget(ing) {
   save(KEYS.target, { ...(t && typeof t === 'object' ? t : {}), [state.mon]: ing });
 }
 
+// タイプによって効く補正が違う（スキル補正は、きのみ・食材タイプでは「なし他」）ので、タイプが変わるたびに分類し直す。
+function syncNature() {
+  const n = natByName(state.nat);
+  const c = TYPES[state.type].natCat;
+  state.up = n ? c(n[1]) : null;
+  state.down = n ? c(n[2]) : null;
+}
+export function setNature(name) {
+  state.nat = natByName(name) ? name : null;
+  syncNature();
+}
+
 export function resetSelection() {
   if (state.type === 'ingredient') state.arr = emptyArr(state.mon);
   state.subs = [null, null, null, null];
-  state.up = null;
-  state.down = null;
+  setNature(null);
 }
 
 export const currentSubs = () => state.subs.slice(0, state.N);

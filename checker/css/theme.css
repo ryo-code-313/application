@@ -42,6 +42,11 @@
   --psy:#7B3FB5;--psy-soft:#33224B;--tail:#B4539C;--tail-soft:#3E2139;--bar:#EDE6F5;--bar-ink:#1B1228;--bar-muted:#6E5D83;
   --grp:#B98AF0;}
 
+/* サブスキルの色（金・青・白）。タイプによらず共通。 */
+:root{--gold-bg:#FBF0BF;--gold-line:#E0C45A;--blue-bg:#DDEBF8;--blue-line:#9CBEE0;--scrim:rgba(20,16,28,.5)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gold-bg:#43391A;--gold-line:#8A7431;--blue-bg:#1D3246;--blue-line:#3E6286;--scrim:rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--gold-bg:#43391A;--gold-line:#8A7431;--blue-bg:#1D3246;--blue-line:#3E6286;--scrim:rgba(0,0,0,.6)}
+
 .chip.tgt{border-color:var(--psy)}
 .chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
 dl.rows .grp{color:var(--grp)}
@@ -84,3 +89,68 @@ header{margin-bottom:12px}
 .bar small.pos{font-size:.62rem;margin-top:1px;white-space:nowrap}
 .bar small.pos:empty{display:none}
 .log li > div:nth-child(2){text-align:right}
+
+/* サブスキルの枠。タップするとダイアログで選ぶ。 */
+.subslots{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.subslot,.dlg-tabs button{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.subslot{padding:6px 10px;min-height:52px}
+.subslot small,.dlg-tabs small{font-size:.66rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.subslot span{font-weight:700;font-size:.84rem;line-height:1.3}
+.subslot.empty,.dlg-tabs .empty{border-style:dashed}
+.subslot.empty span{color:var(--muted)}
+.subslot.off span,.natbtn .off{opacity:.45}
+
+/* 性格のボタン。 */
+.natbtn{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;width:100%;display:flex;align-items:baseline;gap:12px;padding:10px 12px;text-align:left}
+.natbtn b{font-size:1rem;font-weight:900}
+.natbtn b.dim{color:var(--muted)}
+.natbtn small{font-size:.78rem;font-weight:700;color:var(--muted)}
+
+/* ダイアログ。狭い画面では下から出す。 */
+dialog.sheet{border:none;padding:0;background:var(--card);color:var(--ink);border-radius:22px;width:min(560px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+dialog.sheet::backdrop{background:var(--scrim)}
+@media (max-width:599px){
+  dialog.sheet{width:100%;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:calc(100dvh - 24px)}
+  .dlg-in{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+}
+.dlg-in{padding:16px 14px 14px}
+.dlg-in h2{margin:0 0 12px}
+.dlg-in h3{font-size:.78rem;font-weight:900;color:var(--muted);margin:14px 0 6px}
+.dlg-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px}
+.dlg-foot button{font:inherit;font-weight:900;font-size:.85rem;border-radius:12px;padding:10px 18px;cursor:pointer}
+.dlg-foot .txt{background:none;border:none;color:var(--muted);text-decoration:underline;padding:10px 8px}
+.dlg-foot .primary{background:var(--psy);color:#fff;border:none}
+.note{font-size:.72rem;color:var(--muted);font-weight:700;margin:12px 0 0}
+
+/* サブスキルのダイアログ：上に枠の切り替え、下に金色サブスキルと系統×サイズの表。 */
+.dlg-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.dlg-tabs button{padding:4px 6px;min-width:0}
+.dlg-tabs span{font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dlg-tabs button[aria-pressed="true"]{outline:2.5px solid var(--psy);outline-offset:1px}
+.pick{position:relative;font:inherit;font-weight:700;font-size:.8rem;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 4px;min-height:40px;cursor:pointer}
+.pick.off{opacity:.45}
+.pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff;opacity:1}
+.pick:disabled{background:var(--line);border-color:var(--line);color:var(--muted);opacity:.7;cursor:not-allowed}
+.pick i{position:absolute;top:-8px;right:-4px;font-style:normal;font-size:.62rem;font-weight:900;line-height:1;color:#fff;background:var(--tail);border-radius:999px;padding:3px 5px;font-variant-numeric:tabular-nums}
+.gold{display:grid;grid-template-columns:1fr 1fr;gap:8px 6px}
+.fams{margin-top:10px}
+.fam{display:grid;grid-template-columns:8.6em minmax(0,1fr);gap:8px;align-items:center;padding:5px 0}
+.fam>span{font-size:.76rem;font-weight:700;text-align:right;color:var(--muted);line-height:1.3}
+.fam>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+
+/* 性格のダイアログ：行が上昇、列が下降の5×5の表。 */
+.natgrid{display:grid;grid-template-columns:3.3em repeat(5,minmax(0,1fr));gap:4px;align-items:stretch}
+.natgrid .h{font-size:.62rem;font-weight:900;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;padding:2px 0}
+.natgrid .h.on{color:var(--tail)}
+.natgrid .h.corner{font-weight:700}
+.natgrid button{font:inherit;font-weight:700;font-size:clamp(.6rem,2.7vw,.82rem);line-height:1.25;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:8px 0;min-height:38px;min-width:0;cursor:pointer}
+.natgrid button.neutral{background:var(--bg)}
+.natgrid button.off{color:var(--muted)}
+.natgrid button[aria-pressed="true"]{background:var(--bar);border-color:var(--bar);color:var(--bar-ink)}
+@media (max-width:599px){.dlg-in{padding-left:12px;padding-right:12px}}
+
+/* サブスキルの色。枠・ダイアログの部品より後に置いて上書きする。 */
+.subslot.r-gold,.dlg-tabs button.r-gold,.pick.r-gold{background:var(--gold-bg);border-color:var(--gold-line)}
+.subslot.r-blue,.dlg-tabs button.r-blue,.pick.r-blue{background:var(--blue-bg);border-color:var(--blue-line)}
+.pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff}
+.pick:disabled{background:var(--line);border-color:var(--line);color:var(--muted)}

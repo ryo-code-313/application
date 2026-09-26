@@ -1,22 +1,24 @@
 // DOM 描画とイベント配線。計算はタイプごとの calc.js のエンジンに委譲する。
-import { byId, NAT, UNLOCK } from '../../js/constants.js';
+import { byId, UNLOCK } from '../../js/constants.js';
 import { fmtPct, trunc, mmss } from '../../js/format.js';
 import { eff } from '../../js/calc.js';
 import { TYPES } from './types.js';
 import { arrName, SLOT_LV } from './ingredient/constants.js';
 import { slotsOf } from './ingredient/calc.js';
+import { SUB_FULL, subShort, GOLD, FAMILIES, NAT_AXES, natAt, natByName, axisLabel } from './picker.js';
 import {
-  state, monData, loadSettings, setCamp, setG80, setMode, setMon, setType, setTarget, resetSelection,
+  state, monData, loadSettings, setCamp, setG80, setMode, setMon, setType, setTarget, setNature, resetSelection,
   currentSubs, isComplete, env, loadLog, appendLog, removeLogEntry,
 } from './state.js';
 
 const $ = (id) => document.getElementById(id);
-const nameOf = (id) => (byId[id] && byId[id].name ? byId[id].name : 'なし他');
 const chipHtml = (v, label, pressed, dis, cls) =>
   `<button class="chip ${cls || ''}" data-v="${v}" aria-pressed="${pressed}" ${dis ? 'disabled' : ''}>${label}</button>`;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const ALL_FLAGS = [3, 4].flatMap((N) => [true, false].flatMap((camp) => [false, true].map((g80) => ({ N, camp, g80 }))));
 const def = () => TYPES[state.type];
+// ダイアログの注記で使う、そのタイプの順位の基準。
+const METRIC = { berry: 'きのみエナジー', ingredient: '食材の個数', skill: 'スキルの発動回数' };
 
 // 性能の行。'grp' は見出し行。
 const ROWS = {
@@ -76,7 +78,7 @@ export function initUI(engines) {
   $('tabs').innerHTML = Object.entries(TYPES).map(([t, d]) =>
     `<button role="tab" id="tab-${t}" data-type="${t}">${d.label}<small>${Object.keys(d.MONS).length}匹</small></button>`).join('');
   $('tabs').querySelectorAll('[role="tab"]').forEach((b) => {
-    b.onclick = () => { setType(b.dataset.type); keepNature(); syncUrl(); refresh(engines); window.scrollTo({ top: 0 }); };
+    b.onclick = () => { setType(b.dataset.type); syncUrl(); refresh(engines); window.scrollTo({ top: 0 }); };
   });
   // 左右キーでタブを移る。
   $('tabs').addEventListener('keydown', (e) => {
@@ -87,7 +89,7 @@ export function initUI(engines) {
     next.click();
     next.focus();
   });
-  $('mon').onchange = (e) => { setMon(e.target.value); keepNature(); syncUrl(); refresh(engines); };
+  $('mon').onchange = (e) => { setMon(e.target.value); syncUrl(); refresh(engines); };
 
   $('camp').checked = state.camp;
   $('g80').checked = state.g80;
@@ -98,19 +100,12 @@ export function initUI(engines) {
     b.onclick = () => { setMode(+b.dataset.n); refresh(engines); };
   });
 
-  $('nat').innerHTML = '<option value="">選ぶと上昇・下降が入ります</option>' + NAT.map((n) => `<option>${n[0]}</option>`).join('');
-  $('nat').onchange = (e) => {
-    const n = NAT.find((x) => x[0] === e.target.value);
-    if (!n) return;
-    state.up = def().natCat(n[1]);
-    state.down = def().natCat(n[2]);
-    refresh(engines);
-  };
+  initDialogs(engines);
 
   $('save').onclick = () => {
     if (!isComplete()) return;
     const memo = prompt('メモ（空欄可）', '') || '';
-    const entry = { t: Date.now(), memo: memo.trim(), mon: state.mon, subs: currentSubs(), up: state.up, down: state.down };
+    const entry = { t: Date.now(), memo: memo.trim(), mon: state.mon, subs: currentSubs(), nat: state.nat, up: state.up, down: state.down };
     appendLog(state.type === 'ingredient' ? { ...entry, arr: [...state.arr] } : entry);
     renderLog(engines);
     $('save').textContent = '記録済';
@@ -119,17 +114,11 @@ export function initUI(engines) {
 
   $('reset').onclick = () => {
     resetSelection();
-    $('nat').value = '';
     refresh(engines);
     window.scrollTo({ top: 0 });
   };
 
   refresh(engines);
-}
-
-// タイプが変わったら、選んでいた性格の補正をそのタイプの分類に直す（スキル補正は、きのみ・食材タイプでは「なし他」）。
-function keepNature() {
-  ['up', 'down'].forEach((k) => { if (state[k]) state[k] = def().natCat(state[k]); });
 }
 
 let shownType = null;
@@ -193,38 +182,110 @@ function renderIngs(engines) {
   }));
 }
 
-function renderSlots(engines) {
-  const { PICK } = def();
+// そのタイプの計算に効くサブスキル。ほかは「なし他」として計算する。
+const counts = (id) => def().PICK.includes(id);
+const rarityCls = (id) => `r-${byId[id].rarity}${counts(id) ? '' : ' off'}`;
+
+// サブスキルの枠。タップすると、その枠を選ぶダイアログを開く。
+function renderSlots() {
   $('slots').innerHTML = UNLOCK.slice(0, state.N).map((lv, i) => {
-    const used = currentSubs().filter((v, j) => j !== i && v && v !== 'none');
-    return `<div class="slot"><span>Lv.${lv}</span><div class="chips" data-i="${i}">${PICK.map((id) => {
-      const s = byId[id];
-      return chipHtml(id, id === 'none' ? 'なし他' : s.name, state.subs[i] === id, used.includes(id), s && s.rarity === 'gold' ? 'hb' : '');
-    }).join('')}</div></div>`;
+    const id = state.subs[i];
+    return `<button class="subslot ${id ? rarityCls(id) : 'empty'}" data-i="${i}" aria-haspopup="dialog"><small>Lv.${lv}</small><span>${id ? SUB_FULL[id] || subShort(id) : '未選択'}</span></button>`;
   }).join('');
-  $('slots').querySelectorAll('.chips').forEach((g) => g.querySelectorAll('.chip').forEach((b) => {
-    b.onclick = () => {
-      const i = +g.dataset.i, v = b.dataset.v;
-      state.subs[i] = state.subs[i] === v ? null : v;
-      refresh(engines);
-    };
-  }));
+  $('slots').querySelectorAll('.subslot').forEach((b) => { b.onclick = () => openSub(+b.dataset.i); });
 }
 
-function renderNat(engines) {
-  const { NAT_CATS, NATL } = def();
-  ['up', 'down'].forEach((k) => {
-    const other = k === 'up' ? state.down : state.up;
-    $(k).classList.toggle('four', NAT_CATS.length === 4);
-    $(k).innerHTML = NAT_CATS.map((c) => chipHtml(c, NATL[c], state[k] === c, c !== 'other' && other === c)).join('');
-    $(k).querySelectorAll('.chip').forEach((b) => {
-      b.onclick = () => {
-        state[k] = state[k] === b.dataset.v ? null : b.dataset.v;
-        $('nat').value = '';
-        refresh(engines);
-      };
-    });
+// 性格のボタン。名前と、上昇・下降の補正を出す。計算に効かない補正は薄くする。
+function renderNat() {
+  const n = natByName(state.nat);
+  if (!n) {
+    $('natBtn').innerHTML = '<b class="dim">未選択</b><small>タップして選ぶ</small>';
+    return;
+  }
+  const side = (mark, code) => `<span class="${def().natCat(code) === 'other' ? 'off' : ''}">${mark}${axisLabel(code)}</span>`;
+  $('natBtn').innerHTML = `<b>${n[0]}</b><small>${n[1] ? `${side('▲', n[1])} ${side('▼', n[2])}` : '無補正'}</small>`;
+}
+
+// ダイアログ。サブスキルは選ぶと次の空き枠へ進み、全部埋まったら閉じる。性格は選ぶと閉じる。
+let subAt = 0;
+
+function initDialogs(engines) {
+  ['subDlg', 'natDlg'].forEach((d) => {
+    // 背景（ダイアログの外側）をタップしたら閉じる。
+    $(d).addEventListener('click', (e) => { if (e.target === $(d)) $(d).close(); });
   });
+  $('subClose').onclick = () => $('subDlg').close();
+  $('natClose').onclick = () => $('natDlg').close();
+  $('subClear').onclick = () => { state.subs[subAt] = null; refresh(engines); };
+  $('natClear').onclick = () => { setNature(null); $('natDlg').close(); refresh(engines); };
+  $('natBtn').onclick = () => { renderNatDlg(); $('natDlg').showModal(); };
+
+  $('subTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) { subAt = +b.dataset.i; renderSubDlg(); }
+  });
+  $('subBody').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    const id = b.dataset.v;
+    if (state.subs[subAt] === id) {
+      state.subs[subAt] = null;
+    } else {
+      state.subs[subAt] = id;
+      const n = state.N;
+      const next = [...Array(n - 1)].map((_, k) => (subAt + 1 + k) % n).find((j) => !state.subs[j]);
+      if (next === undefined) $('subDlg').close(); else subAt = next;
+    }
+    refresh(engines);
+  });
+  $('natGrid').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    setNature(b.dataset.v);
+    $('natDlg').close();
+    refresh(engines);
+  });
+}
+
+function openSub(i) {
+  subAt = i;
+  renderSubDlg();
+  $('subDlg').showModal();
+}
+
+function renderSubDlg() {
+  if (subAt >= state.N) subAt = 0;
+  const lvs = UNLOCK.slice(0, state.N);
+  $('subTitle').textContent = `Lv.${lvs[subAt]} のサブスキルを選んでください`;
+  $('subTabs').innerHTML = lvs.map((lv, i) => {
+    const id = state.subs[i];
+    return `<button class="${id ? `r-${byId[id].rarity}` : 'empty'}" data-i="${i}" aria-pressed="${i === subAt}"><small>Lv.${lv}</small><span>${id ? subShort(id) : '—'}</span></button>`;
+  }).join('');
+
+  // ほかの枠で選んでいるサブスキルには、その枠のレベルを付けて選べなくする。
+  const usedAt = Object.fromEntries(currentSubs().map((id, i) => [id, lvs[i]]).filter(([id]) => id));
+  const chip = (id, label, cls) => {
+    const lv = usedAt[id], mine = state.subs[subAt] === id;
+    return `<button class="pick ${rarityCls(id)} ${cls || ''}" data-v="${id}" aria-pressed="${mine}" aria-label="${SUB_FULL[id]}${lv ? `（Lv.${lv}で選択中）` : ''}" ${lv && !mine ? 'disabled' : ''}>${label}${lv ? `<i>${lv}</i>` : ''}</button>`;
+  };
+  $('subBody').innerHTML = `<h3>金色サブスキル</h3><div class="gold">${GOLD.map((id) => chip(id, SUB_FULL[id])).join('')}</div>`
+    + `<div class="fams">${FAMILIES.map(([label, sizes]) => `<div class="fam"><span>${label}</span><div>${sizes.map(([id, sz]) => chip(id, sz, 'sz')).join('')}</div></div>`).join('')}</div>`;
+  $('subNote').textContent = `薄い色のサブスキルは${METRIC[state.type]}に影響しないので、「なし他」として計算します。`;
+}
+
+// 性格の表。計算上は無補正と同じになる性格（効く補正がないもの）は薄くする。
+function renderNatDlg() {
+  const c = def().natCat;
+  const on = (code) => c(code) !== 'other';
+  const head = (mark, code, label) => `<span class="h ${on(code) ? 'on' : ''}">${mark}${label}</span>`;
+  $('natGrid').innerHTML = `<span class="h corner">▲＼▼</span>${NAT_AXES.map(([code, , short]) => head('▼', code, short)).join('')}`
+    + NAT_AXES.map(([up, , short]) => head('▲', up, short) + NAT_AXES.map(([down]) => {
+      const name = natAt(up, down);
+      const cls = [up === down ? 'neutral' : '', on(up) || on(down) ? '' : 'off'].join(' ');
+      return `<button class="${cls}" data-v="${name}" aria-pressed="${state.nat === name}" aria-label="${name}（${up === down ? '無補正' : `▲${axisLabel(up)} ▼${axisLabel(down)}`}）">${name}</button>`;
+    }).join('')).join('');
+  const labels = NAT_AXES.filter(([code]) => on(code)).map(([, l]) => l);
+  $('natNote').textContent = `${METRIC[state.type]}に効くのは ${labels.join(' と ')} の補正だけです。薄い色の性格は「無補正」と同じ結果になります。`;
 }
 
 const condText = (m, e) => `Lv.${state.N === 4 ? 70 : 60}・睡眠8.5時間・${e.g80 ? 'げんき常時81%以上' : `起床時げんき${m.wake}から10分ごとに1減少（回復スキルなし）`}`;
@@ -375,7 +436,7 @@ function renderLog(engines) {
     .sort((a, b) => b.r - a.r);
 
   $('log').innerHTML = L.length
-    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(nameOf).join('／')}　▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : '計算中'}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
+    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(subShort).join('／')}　${x.nat ? `${esc(x.nat)} ` : ''}▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : '計算中'}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
     : `<li class="empty">${state.N === 4 ? 'Lv.70まで' : 'Lv.50まで'}の記録はまだありません</li>`;
 
   $('log').querySelectorAll('.del').forEach((b) => {
@@ -387,8 +448,10 @@ function refresh(engines) {
   renderHeader();
   renderMode();
   renderIngs(engines);
-  renderSlots(engines);
-  renderNat(engines);
+  renderSlots();
+  renderNat();
+  if ($('subDlg').open) renderSubDlg();
+  if ($('natDlg').open) renderNatDlg();
   ({ ingredient: renderIngStats, berry: renderBerryStats, skill: renderSkillStats })[state.type](engines[state.type]);
   renderBar(engines);
   renderLog(engines);
