@@ -38,14 +38,12 @@
         <h2>サブスキル</h2>
         <div class="mode" role="group" aria-label="対象レベル"><button data-n="3">Lv.50まで</button><button data-n="4">Lv.70まで</button></div>
       </div>
-      <div id="slots"></div>
+      <div class="subslots" id="slots"></div>
     </section>
 
     <section>
       <h2>性格</h2>
-      <div class="slot"><span>▲上昇</span><div class="chips" id="up"></div></div>
-      <div class="slot down"><span>▼下降</span><div class="chips" id="down"></div></div>
-      <div class="natname"><span>性格名</span><select id="nat" aria-label="性格名"></select></div>
+      <button class="natbtn" id="natBtn" aria-haspopup="dialog"></button>
     </section>
     <button class="reset" id="reset">サブスキル・性格を消す</button>
   </div>
@@ -77,6 +75,25 @@
     <button class="save" id="save" disabled>記録</button>
   </div>
 </div>
+
+<dialog class="sheet" id="subDlg" aria-labelledby="subTitle">
+  <div class="dlg-in">
+    <h2 id="subTitle"></h2>
+    <div class="dlg-tabs" id="subTabs" role="group" aria-label="枠"></div>
+    <div id="subBody"></div>
+    <p class="note" id="subNote"></p>
+    <div class="dlg-foot"><button class="txt" id="subClear">この枠をクリア</button><button class="primary" id="subClose">閉じる</button></div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="natDlg" aria-labelledby="natTitle">
+  <div class="dlg-in">
+    <h2 id="natTitle">性格を選んでください</h2>
+    <div class="natgrid" id="natGrid"></div>
+    <p class="note" id="natNote"></p>
+    <div class="dlg-foot"><button class="txt" id="natClear">クリア</button><button class="primary" id="natClose">閉じる</button></div>
+  </div>
+</dialog>
 
 <script type="module" src="js/main.js"></script>
 </body>
