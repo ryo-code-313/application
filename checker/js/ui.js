@@ -315,6 +315,12 @@ const timeRows = (r, m, e) => {
 
 const ARR_STATS = ['hAll', 'hDay', 'hNight', 'rAmt', 'rAllDay', 'rFull'];
 
+// 結果カードの横棒。日中と睡眠中の割合を幅で見せる（値がないときは空）。
+const setSplit = (day, night) => {
+  const all = day + night;
+  $('hSplit').style.width = all > 0 ? `${(day / all) * 100}%` : '0';
+};
+
 // 未選択のサブスキル・性格は「なし他」・無補正として計算する。
 function renderIngStats(engine) {
   const e = env(), mm = monData();
@@ -335,6 +341,7 @@ function renderIngStats(engine) {
 
   if (!arrOk) {
     ARR_STATS.forEach((id) => { $(id).textContent = '—'; });
+    setSplit(0, 0);
     $('rDRatio').textContent = '—';
     return;
   }
@@ -345,6 +352,7 @@ function renderIngStats(engine) {
   $('hAll').textContent = `${total.toFixed(1)}個`;
   $('hDay').textContent = r.day.toFixed(1);
   $('hNight').textContent = r.night.toFixed(1);
+  setSplit(r.day, r.night);
   $('rAmt').innerHTML = `${tAmt.toFixed(2)}個<span>全食材${allAmt.toFixed(2)}個</span>`;
   $('rAllDay').innerHTML = `${(r.dayAll + r.nightAll).toFixed(1)}個<span>日中${r.dayAll.toFixed(1)}個・睡眠中${r.nightAll.toFixed(1)}個</span>`;
   $('rFull').innerHTML = `${(r.full * 100).toFixed(1)}%<span>あふれた食材 平均${r.lost.toFixed(1)}個</span>`;
@@ -364,6 +372,7 @@ function renderBerryStats(engine) {
   $('hAll').textContent = Math.round(total).toLocaleString();
   $('hDay').textContent = Math.round(r.day * r.energy).toLocaleString();
   $('hNight').textContent = Math.round(r.night * r.energy).toLocaleString();
+  setSplit(r.day, r.night);
 
   timeRows(r, m, e);
   $('rEnergy').innerHTML = `${r.energy}<span>${mm.berry} Lv.${r.LV}</span>`;
@@ -391,6 +400,7 @@ function renderSkillStats(engine) {
   $('hAll').textContent = `${total.toFixed(2)}回`;
   $('hDay').textContent = r.day.toFixed(2);
   $('hNight').textContent = r.night.toFixed(2);
+  setSplit(r.day, r.night);
 
   timeRows(r, m, e);
   $('rCap').innerHTML = `${r.cap}個<span>${e.camp ? 'チケット込み（×1.2切り上げ）' : '基礎＋サブスキル'}</span>`;

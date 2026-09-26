@@ -25,7 +25,7 @@
 ## 構成
 
 - `index.html` — マークアップ
-- `css/theme.css` — 配色（食材タイプは緑、きのみタイプは青、スキルタイプは紫。レイアウトは `../css/style.css`）
+- `css/theme.css` — 見た目「夜のノート」（生成りの地に夜空色の文字、タイプの色はアクセント。文字は英数字が Outfit・日本語が Zen Kaku Gothic New。土台のレイアウトは `../css/style.css`）
 - `js/types.js` — 食材タイプ・きのみタイプの定義をまとめる
 - `js/state.js` — アプリ状態管理・localStorage永続化（記録は統合前と同じ `iglog`・`bflog` とスキルタイプの `sklog`、共通の設定は `ck` 接頭辞）
 - `js/ui.js` — DOM描画・イベント処理

@@ -1,157 +1,219 @@
-/* 厳選チェッカーの配色と追加部品。レイアウトは ../css/style.css を共有する。
-   食材タイプは緑、きのみタイプは青（<html data-type="berry">）、スキルタイプは紫（ミュウツー版と同じ配色）。 */
+/* 厳選チェッカーの見た目「夜のノート」。レイアウトの土台は ../css/style.css（ミュウツー版と共有）で、ここで上書きする。
+   生成りの紙の地に夜空色の文字。タイプの色（きのみ=青・食材=緑・スキル=紫）はアクセントにだけ使う（<html data-type>）。
+   文字は英数字が Outfit、日本語が Zen Kaku Gothic New（英数字用を先に書くと、ブラウザが1文字ずつ使い分ける）。 */
+
+/* 共通の色。 */
 :root{
-  --bg:#F3F5EC;--card:#FFFFFF;--ink:#23301C;--muted:#6B7760;--line:#DDE4D0;
-  --psy:#3F7F34;--psy-soft:#E6F0DD;--tail:#C8641E;--tail-soft:#F8E6D6;--bar:#23301C;--bar-ink:#FFFFFF;--bar-muted:#BFCBB2;
-  --grp:var(--psy);
+  --bg:#F5F2EC;--card:#FFFFFF;--ink:#1D1B2C;--muted:#6A6679;--line:#E4DFD5;--line-soft:#EEEAE2;
+  --bar:#1D1B2C;--bar-ink:#FFFFFF;--bar-muted:#B9B5C8;
+  --tail:#B4456E;--tail-soft:#F7E4EB;--off:#8C8898;--off-soft:#EEEAE2;
+  --gold-bg:#FBF4E2;--gold-line:#E9D9A8;--gold-ink:#8A5E00;--gold-badge:#F2E2B3;
+  --blue-bg:#EEF4FB;--blue-line:#C9DAEE;--blue-ink:#1F4F83;--blue-badge:#D8E6F5;
+  --white-badge:#EEEAE2;--white-ink:#5C5868;
+  --scrim:rgba(29,27,44,.45);--shadow:0 10px 30px rgba(29,27,44,.22);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#11170D;--card:#1C2517;--ink:#E7EEDF;--muted:#A2AF96;--line:#33402B;
-  --psy:#3F7F34;--psy-soft:#26341F;--tail:#B2581A;--tail-soft:#3A2616;--bar:#E7EEDF;--bar-ink:#172012;--bar-muted:#6C7A60;
-  --grp:#8CCB7F;}}
+  --bg:#15141C;--card:#1F1E28;--ink:#ECEAF2;--muted:#A6A2B5;--line:#34323F;--line-soft:#2A2935;
+  --bar:#2B2A38;--bar-ink:#FFFFFF;--bar-muted:#B9B5C8;
+  --tail:#E07FA4;--tail-soft:#3E2231;--off:#8A8698;--off-soft:#2A2935;
+  --gold-bg:#332B18;--gold-line:#6E5B2A;--gold-ink:#E3C77A;--gold-badge:#4A3E1F;
+  --blue-bg:#1B2736;--blue-line:#34506E;--blue-ink:#9CC3EA;--blue-badge:#243A52;
+  --white-badge:#2F2E3A;--white-ink:#C9C5D6;
+  --scrim:rgba(0,0,0,.6);--shadow:0 10px 30px rgba(0,0,0,.45);}}
 :root[data-theme="dark"]{
-  --bg:#11170D;--card:#1C2517;--ink:#E7EEDF;--muted:#A2AF96;--line:#33402B;
-  --psy:#3F7F34;--psy-soft:#26341F;--tail:#B2581A;--tail-soft:#3A2616;--bar:#E7EEDF;--bar-ink:#172012;--bar-muted:#6C7A60;
-  --grp:#8CCB7F;}
+  --bg:#15141C;--card:#1F1E28;--ink:#ECEAF2;--muted:#A6A2B5;--line:#34323F;--line-soft:#2A2935;
+  --bar:#2B2A38;--bar-ink:#FFFFFF;--bar-muted:#B9B5C8;
+  --tail:#E07FA4;--tail-soft:#3E2231;--off:#8A8698;--off-soft:#2A2935;
+  --gold-bg:#332B18;--gold-line:#6E5B2A;--gold-ink:#E3C77A;--gold-badge:#4A3E1F;
+  --blue-bg:#1B2736;--blue-line:#34506E;--blue-ink:#9CC3EA;--blue-badge:#243A52;
+  --white-badge:#2F2E3A;--white-ink:#C9C5D6;
+  --scrim:rgba(0,0,0,.6);--shadow:0 10px 30px rgba(0,0,0,.45);}
 
-:root[data-type="berry"]{
-  --bg:#EEF3F7;--card:#FFFFFF;--ink:#1B2A36;--muted:#617080;--line:#D5E0E9;
-  --psy:#2F6F9E;--psy-soft:#DDEBF5;--tail:#B8457A;--tail-soft:#F6E0EA;--bar:#1B2A36;--bar-ink:#FFFFFF;--bar-muted:#B3C2CF;
-  --grp:var(--psy);
+/* タイプの色。--psy は塗り（白文字が乗る）、--psy-soft は淡い地、--psy-ink は淡い地の上の文字、
+   --grp は表の見出し、--save は記録ボタン。 */
+:root{--psy:#3A7F37;--psy-soft:#E3EFDF;--psy-ink:#2C6329;--grp:#3A7F37;--save:#9FD196}
+:root[data-type="berry"]{--psy:#2C6BAE;--psy-soft:#E4EEF8;--psy-ink:#1F4F83;--grp:#2C6BAE;--save:#7FB2E5}
+:root[data-type="skill"]{--psy:#7443B8;--psy-soft:#EEE6F8;--psy-ink:#57308F;--grp:#7443B8;--save:#C6A8EE}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--psy-soft:#22331F;--psy-ink:#A9D8A0;--grp:#8CCB7F}
+  :root[data-type="berry"]:not([data-theme="light"]){--psy-soft:#1B2B3D;--psy-ink:#A9CBEE;--grp:#86BCE3}
+  :root[data-type="skill"]:not([data-theme="light"]){--psy-soft:#2B2140;--psy-ink:#D2BBF2;--grp:#B98AF0}
 }
-@media (prefers-color-scheme:dark){:root[data-type="berry"]:not([data-theme="light"]){
-  --bg:#0E151B;--card:#18222B;--ink:#E3ECF3;--muted:#9AABB9;--line:#2E3D4A;
-  --psy:#2F6F9E;--psy-soft:#1F3140;--tail:#A33E6D;--tail-soft:#3A1F2C;--bar:#E3ECF3;--bar-ink:#131C23;--bar-muted:#687887;
-  --grp:#86BCE3;}}
-:root[data-type="berry"][data-theme="dark"]{
-  --bg:#0E151B;--card:#18222B;--ink:#E3ECF3;--muted:#9AABB9;--line:#2E3D4A;
-  --psy:#2F6F9E;--psy-soft:#1F3140;--tail:#A33E6D;--tail-soft:#3A1F2C;--bar:#E3ECF3;--bar-ink:#131C23;--bar-muted:#687887;
-  --grp:#86BCE3;}
+:root[data-theme="dark"]{--psy-soft:#22331F;--psy-ink:#A9D8A0;--grp:#8CCB7F}
+:root[data-type="berry"][data-theme="dark"]{--psy-soft:#1B2B3D;--psy-ink:#A9CBEE;--grp:#86BCE3}
+:root[data-type="skill"][data-theme="dark"]{--psy-soft:#2B2140;--psy-ink:#D2BBF2;--grp:#B98AF0}
 
-:root[data-type="skill"]{
-  --bg:#F4F0F8;--card:#FFFFFF;--ink:#2B1D3F;--muted:#7A6B8E;--line:#E2D8EC;
-  --psy:#7B3FB5;--psy-soft:#EFE4F8;--tail:#B4539C;--tail-soft:#F8E3F1;--bar:#2B1D3F;--bar-ink:#FFFFFF;--bar-muted:#C9B8DE;
-  --grp:var(--psy);
-}
-@media (prefers-color-scheme:dark){:root[data-type="skill"]:not([data-theme="light"]){
-  --bg:#150E1F;--card:#221832;--ink:#EDE6F5;--muted:#A99BBC;--line:#382A4D;
-  --psy:#7B3FB5;--psy-soft:#33224B;--tail:#B4539C;--tail-soft:#3E2139;--bar:#EDE6F5;--bar-ink:#1B1228;--bar-muted:#6E5D83;
-  --grp:#B98AF0;}}
-:root[data-type="skill"][data-theme="dark"]{
-  --bg:#150E1F;--card:#221832;--ink:#EDE6F5;--muted:#A99BBC;--line:#382A4D;
-  --psy:#7B3FB5;--psy-soft:#33224B;--tail:#B4539C;--tail-soft:#3E2139;--bar:#EDE6F5;--bar-ink:#1B1228;--bar-muted:#6E5D83;
-  --grp:#B98AF0;}
+/* 文字。 */
+body{font-family:"Outfit","Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink)}
 
-/* サブスキルの色（金・青・白）。タイプによらず共通。 */
-:root{--gold-bg:#FBF0BF;--gold-line:#E0C45A;--blue-bg:#DDEBF8;--blue-line:#9CBEE0;--scrim:rgba(20,16,28,.5)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gold-bg:#43391A;--gold-line:#8A7431;--blue-bg:#1D3246;--blue-line:#3E6286;--scrim:rgba(0,0,0,.6)}}
-:root[data-theme="dark"]{--gold-bg:#43391A;--gold-line:#8A7431;--blue-bg:#1D3246;--blue-line:#3E6286;--scrim:rgba(0,0,0,.6)}
-
-.chip.tgt{border-color:var(--psy)}
-.chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
-dl.rows .grp{color:var(--grp)}
-dl.rows{grid-template-columns:minmax(8.5em,1fr) auto;column-gap:0}
-dl.rows dd{padding-left:12px}
-section > .natname:first-child{margin-top:0}
-#monInfo{margin:8px 0 0}
-#monInfo:empty{display:none}
-#monName .form{display:block;font-size:.9rem;letter-spacing:.02em;margin-top:2px}
+/* カード。 */
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 14px;margin-bottom:14px}
+h2{font-size:1rem;font-weight:900;letter-spacing:.02em}
+select{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-height:46px;font-size:1rem}
 
 /* タイプ切り替えのタブ。スクロールしても上に残す。 */
-.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 8px}
-.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border-radius:16px;padding:4px;box-shadow:0 1px 0 var(--line)}
-.tabs [role="tab"]{font:inherit;font-weight:900;font-size:.88rem;line-height:1.25;border:none;border-radius:12px;padding:7px 4px;background:transparent;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
-.tabs [role="tab"] small{font-size:.68rem;font-weight:700;opacity:.8}
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px}
+.tabs [role="tab"]{font:inherit;font-weight:700;font-size:.9rem;line-height:1.25;border:none;border-radius:10px;padding:7px 4px;min-height:48px;background:transparent;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.tabs [role="tab"] small{font-size:.7rem;font-weight:500;opacity:.85}
 .tabs [role="tab"][aria-selected="true"]{background:var(--psy);color:#fff}
-main{padding-top:12px}
-header{margin-bottom:12px}
+main{padding-top:20px}
 
-/* ポケモンの基礎値。 */
-.mon .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:6px;margin-top:10px}
-.facts div{background:var(--psy-soft);border-radius:12px;padding:7px 4px;text-align:center}
-.facts small{display:block;font-size:.66rem;font-weight:700;color:var(--muted)}
-.facts b{font-size:1rem;font-weight:900;font-variant-numeric:tabular-nums}
-.mon .natname{margin-top:0}
+/* 見出し。タイプ名を上に小さく、ポケモン名を大きく。 */
+header{margin-bottom:14px;align-items:flex-start}
+header h1{display:flex;flex-direction:column-reverse;gap:6px;font-size:2.25rem;font-weight:900;letter-spacing:.02em;line-height:1.1}
+header h1 small{display:flex;align-items:center;gap:8px;margin:0;font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+header h1 small::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--psy);flex:none}
+#monName .form{display:block;font-size:.95rem;letter-spacing:.02em;margin-top:4px;color:var(--muted)}
+
+/* ポケモンの基礎値。区切り線で横に並べる。 */
+.mon .natname{margin-top:0;grid-template-columns:1fr;gap:6px}
+.mon .natname>span{font-size:.75rem}
+.mon .facts{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.facts div{display:flex;flex-direction:column;gap:2px;padding:0 8px;border-left:1px solid var(--line-soft);background:none;border-radius:0;text-align:left}
+.facts div:first-child{border-left:none;padding-left:0}
+.facts small{display:block;font-size:.68rem;font-weight:700;color:var(--muted)}
+.facts b{font-size:1.2rem;font-weight:600}
+#monInfo{margin:10px 0 0;font-weight:500;line-height:1.6}
+#monInfo:empty{display:none}
+section>.natname:first-child{margin-top:0}
+
+/* 食材配列・狙い食材のチップ。 */
+.slot{grid-template-columns:52px 1fr;padding:8px 0}
+.slot+.slot{border-top:1px solid var(--line-soft)}
+.slot>span{font-weight:700;color:var(--muted)}
+.chip{border:1.5px solid var(--line);border-radius:12px;min-height:44px;background:var(--card)}
+.chip.tgt{border-color:var(--psy)}
+.chip[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff}
+.chip:disabled[aria-pressed="true"]{opacity:1;cursor:default}
 
 /* サブスキル見出しの横に置く対象レベルの切り替え。 */
-.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
 .sec-head h2{margin:0}
-.sec-head .mode{margin:0;background:var(--bg);border-radius:12px;padding:3px;gap:3px}
-.sec-head .mode button{font-size:.75rem;padding:6px 10px;border-radius:9px}
+.sec-head .mode{margin:0;background:var(--bg);border-radius:10px;padding:3px;gap:2px}
+.sec-head .mode button{font-size:.75rem;font-weight:700;padding:8px 12px;border-radius:8px;min-height:36px}
+.sec-head .mode button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+
+/* サブスキルの枠。1枠1行で「Lv・名前・色」。タップするとダイアログで選ぶ。 */
+.subslots{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.subslot,.dlg-tabs button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.subslot{display:flex;flex-direction:row;align-items:center;gap:12px;min-height:52px;padding:0 14px;text-align:left}
+.subslot small{width:44px;flex:none;font-size:.8rem;font-weight:600;color:var(--muted)}
+.subslot span{flex:1;font-weight:700;font-size:.95rem;line-height:1.3}
+.subslot::after{font-size:.7rem;font-weight:700;border-radius:999px;padding:3px 8px;flex:none}
+.subslot.r-gold::after{content:"金";color:var(--gold-ink);background:var(--gold-badge)}
+.subslot.r-blue::after{content:"青";color:var(--blue-ink);background:var(--blue-badge)}
+.subslot.r-white::after{content:"白";color:var(--white-ink);background:var(--white-badge)}
+.subslot.empty{border:1.5px dashed var(--line);background:transparent}
+.subslot.empty span{color:var(--muted)}
+.subslot.empty::after{content:"選ぶ";color:var(--muted);padding:0}
+.subslot:disabled,.dlg-tabs button:disabled{opacity:.4;cursor:not-allowed}
+.dlg-tabs small{font-size:.68rem;font-weight:600;color:var(--muted)}
+
+/* 性格のボタン。性格名と、上昇・下降の補正をバッジで出す（効かない補正は灰色）。 */
+.natbtn{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;cursor:pointer;width:100%;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;text-align:left}
+.natbtn b{font-size:1.05rem;font-weight:900}
+.natbtn b.dim{color:var(--muted)}
+.natbtn small{display:flex;gap:6px;font-size:.75rem;font-weight:700;color:var(--muted)}
+.natbtn small span{border-radius:999px;padding:4px 10px}
+.natbtn small span:first-child{color:var(--psy-ink);background:var(--psy-soft)}
+.natbtn small span:last-child{color:var(--tail);background:var(--tail-soft)}
+.natbtn small span.off{color:var(--off);background:var(--off-soft);opacity:1}
+
+.reset{font-size:.82rem;min-height:44px;margin:0 auto 14px}
+
+/* 性能。タイプの色のカードに合計を大きく、横棒で日中と睡眠中の割合。 */
+.perf-head{margin-bottom:10px}
+.switch{color:var(--ink)}
+.cond{font-size:.7rem;font-weight:500;line-height:1.6;margin:0 0 12px}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-bottom:12px;padding:16px;border-radius:16px;background:var(--psy);color:#fff}
+.hero .stat{background:none;border-radius:0;padding:0;text-align:left;display:flex;align-items:baseline;gap:6px}
+.hero .stat small{color:#fff;opacity:.9;font-size:.75rem;font-weight:700}
+.hero .stat b{font-size:1.05rem;font-weight:600}
+.hero .stat.main{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:none}
+.hero .stat.main b{font-size:2.6rem;font-weight:600;line-height:1}
+.hero .stat:last-child{justify-content:flex-end}
+.split{grid-column:1/-1;height:8px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden}
+.split i{display:block;height:100%;width:0;background:#fff;border-radius:999px}
+dl.rows{grid-template-columns:minmax(8.5em,1fr) auto;column-gap:0}
+dl.rows dt,dl.rows dd{border-top:1px solid var(--line-soft);padding:10px 0}
+dl.rows dd{padding-left:12px;font-weight:600}
+dl.rows dd span{font-weight:400}
+dl.rows .grp{color:var(--grp);font-size:.7rem;letter-spacing:.08em;padding:14px 0 6px;border-top:none}
+dl.rows dt.grp:first-child{padding-top:2px}
+
+/* 記録。 */
+.log li{border-top:1px solid var(--line-soft);padding:10px 0}
+.log b{color:var(--psy-ink);font-size:1.1rem;font-weight:600}
+.log li > div:nth-child(2){text-align:right}
+.del{min-height:44px;padding:4px 8px}
+
+/* 下の帯。画面の端から浮かせた夜空色の帯。 */
+.bar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));border-radius:20px;padding:12px 12px 12px 18px;box-shadow:var(--shadow)}
+.bar-in{grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px}
+.bar small{font-size:.66rem}
+.bar b{font-size:1.4rem;font-weight:600}
+.bar small.pos{font-size:.64rem;margin-top:1px;white-space:nowrap}
+.bar small.pos:empty{display:none}
+.save{background:var(--save);color:#1D1B2C;border-radius:14px;min-height:48px;padding:0 16px;font-size:.9rem}
+@media (max-width:380px){.bar{padding-left:14px}.bar-in{gap:10px}.bar b{font-size:1.15rem}}
 
 /* 広い画面では入力を左、結果を右に並べる。 */
 @media (min-width:960px){
-  .tabs-in,.bar-in{max-width:1040px}
-  main{max-width:1040px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .tabs-in{max-width:1040px}
+  main{max-width:1040px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  .bar{left:50%;right:auto;width:min(1040px,calc(100vw - 24px));transform:translateX(-50%)}
+  .bar-in{max-width:none}
 }
-
-/* 下の帯の、上位%の下に出す順位。 */
-.bar small.pos{font-size:.62rem;margin-top:1px;white-space:nowrap}
-.bar small.pos:empty{display:none}
-.log li > div:nth-child(2){text-align:right}
-
-/* サブスキルの枠。タップするとダイアログで選ぶ。 */
-.subslots{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.subslot,.dlg-tabs button{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;text-align:left}
-.subslot{padding:6px 10px;min-height:52px}
-.subslot small,.dlg-tabs small{font-size:.66rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
-.subslot span{font-weight:700;font-size:.84rem;line-height:1.3}
-.subslot.empty,.dlg-tabs .empty{border-style:dashed}
-.subslot.empty span{color:var(--muted)}
-.natbtn .off{opacity:.45}
-.subslot:disabled,.dlg-tabs button:disabled{opacity:.4;cursor:not-allowed}
-
-/* 性格のボタン。 */
-.natbtn{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;width:100%;display:flex;align-items:baseline;gap:12px;padding:10px 12px;text-align:left}
-.natbtn b{font-size:1rem;font-weight:900}
-.natbtn b.dim{color:var(--muted)}
-.natbtn small{font-size:.78rem;font-weight:700;color:var(--muted)}
 
 /* ダイアログ。狭い画面では下から出す。 */
-dialog.sheet{border:none;padding:0;background:var(--card);color:var(--ink);border-radius:22px;width:min(560px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+dialog.sheet{border:none;padding:0;background:var(--card);color:var(--ink);border-radius:24px;width:min(560px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;box-shadow:var(--shadow)}
 dialog.sheet::backdrop{background:var(--scrim)}
 @media (max-width:599px){
-  dialog.sheet{width:100%;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:calc(100dvh - 24px)}
-  .dlg-in{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  dialog.sheet{width:100%;margin:auto 0 0;border-radius:24px 24px 0 0;max-height:calc(100dvh - 24px)}
+  .dlg-in{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  .dlg-in::before{content:"";display:block;width:40px;height:5px;border-radius:999px;background:var(--line);margin:0 auto 12px}
 }
-.dlg-in{padding:16px 14px 14px}
-.dlg-in h2{margin:0 0 12px}
+.dlg-in{padding:14px 16px 16px}
+.dlg-in h2{margin:0 0 14px;font-size:1.1rem}
 .dlg-in h2:focus,dialog.sheet:focus{outline:none}
-.dlg-in h3{font-size:.78rem;font-weight:900;color:var(--muted);margin:14px 0 6px}
-.dlg-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px}
-.dlg-foot button{font:inherit;font-weight:900;font-size:.85rem;border-radius:12px;padding:10px 18px;cursor:pointer}
-.dlg-foot .txt{background:none;border:none;color:var(--muted);text-decoration:underline;padding:10px 8px}
-.dlg-foot .primary{background:var(--psy);color:#fff;border:none}
-.note{font-size:.72rem;color:var(--muted);font-weight:700;margin:12px 0 0}
+.dlg-in h3{font-size:.72rem;font-weight:900;letter-spacing:.08em;color:var(--gold-ink);margin:16px 0 8px}
+.dlg-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px}
+.dlg-foot button{font:inherit;font-weight:900;font-size:.9rem;border-radius:14px;padding:0 24px;min-height:48px;cursor:pointer}
+.dlg-foot .txt{background:none;border:none;color:var(--muted);text-decoration:underline;padding:0 8px;min-height:44px;font-weight:700}
+.dlg-foot .primary{background:var(--ink);color:var(--card);border:none}
+.note{font-size:.7rem;color:var(--muted);font-weight:500;line-height:1.6;margin:12px 0 0}
 
 /* サブスキルのダイアログ：上に枠の切り替え、下に金色サブスキルと系統×サイズの表。 */
-.dlg-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.dlg-tabs button{padding:4px 6px;min-width:0}
-.dlg-tabs span{font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.dlg-tabs button[aria-pressed="true"]{outline:2.5px solid var(--psy);outline-offset:1px}
-.pick{position:relative;font:inherit;font-weight:700;font-size:.8rem;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 4px;min-height:40px;cursor:pointer}
-.pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff;opacity:1}
-.pick.used{background:var(--line);border-color:var(--line);color:var(--muted);opacity:.7}
-.pick i{position:absolute;top:-8px;right:-4px;font-style:normal;font-size:.62rem;font-weight:900;line-height:1;color:#fff;background:var(--tail);border-radius:999px;padding:3px 5px;font-variant-numeric:tabular-nums}
+.dlg-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dlg-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;padding:4px 6px;min-width:0;text-align:center}
+.dlg-tabs span{font-size:.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dlg-tabs .empty{border:1.5px dashed var(--line)}
+.dlg-tabs button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px}
+.pick{position:relative;font:inherit;font-weight:700;font-size:.82rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 4px;min-height:44px;cursor:pointer}
+.pick.sz{font-size:.95rem}
+.pick i{position:absolute;top:-7px;right:-5px;font-style:normal;font-size:.62rem;font-weight:700;line-height:1;color:var(--card);background:var(--ink);border-radius:999px;padding:3px 6px}
 .gold{display:grid;grid-template-columns:1fr 1fr;gap:8px 6px}
 .fams{margin-top:10px}
-.fam{display:grid;grid-template-columns:8.6em minmax(0,1fr);gap:8px;align-items:center;padding:5px 0}
-.fam>span{font-size:.76rem;font-weight:700;text-align:right;color:var(--muted);line-height:1.3}
+.fam{display:grid;grid-template-columns:minmax(0,1fr) 11.5em;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line-soft)}
+.fam>span{font-size:.82rem;font-weight:700;text-align:left;color:var(--ink);line-height:1.3}
 .fam>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 
 /* 性格のダイアログ：行が上昇、列が下降の5×5の表。 */
-.natgrid{display:grid;grid-template-columns:3.3em repeat(5,minmax(0,1fr));gap:4px;align-items:stretch}
-.natgrid .h{font-size:.62rem;font-weight:900;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;padding:2px 0}
+.natgrid{display:grid;grid-template-columns:3.4em repeat(5,minmax(0,1fr));gap:5px;align-items:stretch}
+.natgrid .h{font-size:.64rem;font-weight:900;color:var(--off);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;padding:2px 0}
 .natgrid .h.on{color:var(--tail)}
-.natgrid .h.corner{font-weight:700}
-.natgrid button{font:inherit;font-weight:700;font-size:clamp(.6rem,2.7vw,.82rem);line-height:1.25;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:8px 0;min-height:38px;min-width:0;cursor:pointer}
-.natgrid button.neutral{background:var(--bg)}
-.natgrid button.off{color:var(--muted)}
-.natgrid button[aria-pressed="true"]{background:var(--bar);border-color:var(--bar);color:var(--bar-ink)}
-@media (max-width:599px){.dlg-in{padding-left:12px;padding-right:12px}}
+/* 7番目以降で6つおきの見出しは行（▲上昇）の見出し。 */
+.natgrid .h.on:nth-child(6n+1){color:var(--psy-ink)}
+.natgrid .h.corner{font-weight:700;color:var(--muted)}
+.natgrid button{font:inherit;font-weight:700;font-size:clamp(.6rem,2.7vw,.8rem);line-height:1.25;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 0;min-height:46px;min-width:0;cursor:pointer}
+.natgrid button.neutral{background:var(--bg);border-style:dashed}
+.natgrid button.off{color:var(--off)}
+.natgrid button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+@media (max-width:599px){.dlg-in{padding-left:14px;padding-right:14px}}
 
 /* サブスキルの色。枠・ダイアログの部品より後に置いて上書きする。 */
 .subslot.r-gold,.dlg-tabs button.r-gold,.pick.r-gold{background:var(--gold-bg);border-color:var(--gold-line)}
 .subslot.r-blue,.dlg-tabs button.r-blue,.pick.r-blue{background:var(--blue-bg);border-color:var(--blue-line)}
-.pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff}
-.pick.used{background:var(--line);border-color:var(--line);color:var(--muted)}
+.pick[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.pick.used{background:var(--line-soft);border-color:var(--line-soft);color:var(--muted)}
