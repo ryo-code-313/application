@@ -186,11 +186,16 @@ function renderIngs(engines) {
 const counts = (id) => def().PICK.includes(id);
 const rarityCls = (id) => `r-${byId[id].rarity}${counts(id) ? '' : ' off'}`;
 
+// サブスキルはレベルの低い枠から順に入れる。手前の枠が空いている枠は選べない。
+const reachable = (i) => currentSubs().slice(0, i).every(Boolean);
+const firstEmpty = () => Math.max(0, currentSubs().findIndex((v) => !v));
+const isLastFilled = (i) => currentSubs().slice(i + 1).every((v) => !v);
+
 // サブスキルの枠。タップすると、その枠を選ぶダイアログを開く。
 function renderSlots() {
   $('slots').innerHTML = UNLOCK.slice(0, state.N).map((lv, i) => {
     const id = state.subs[i];
-    return `<button class="subslot ${id ? rarityCls(id) : 'empty'}" data-i="${i}" aria-haspopup="dialog"><small>Lv.${lv}</small><span>${id ? SUB_FULL[id] || subShort(id) : '未選択'}</span></button>`;
+    return `<button class="subslot ${id ? rarityCls(id) : 'empty'}" data-i="${i}" aria-haspopup="dialog" ${reachable(i) ? '' : 'disabled'}><small>Lv.${lv}</small><span>${id ? SUB_FULL[id] || subShort(id) : '未選択'}</span></button>`;
   }).join('');
   $('slots').querySelectorAll('.subslot').forEach((b) => { b.onclick = () => openSub(+b.dataset.i); });
 }
@@ -206,35 +211,36 @@ function renderNat() {
   $('natBtn').innerHTML = `<b>${n[0]}</b><small>${n[1] ? `${side('▲', n[1])} ${side('▼', n[2])}` : '無補正'}</small>`;
 }
 
-// ダイアログ。サブスキルは選ぶと次の空き枠へ進み、全部埋まったら閉じる。性格は選ぶと閉じる。
+// ダイアログ。サブスキルは選ぶと次の空き枠へ進み、「閉じる」を押すまで開いたままにする。性格は選ぶと閉じる。
 let subAt = 0;
 
 function initDialogs(engines) {
-  ['subDlg', 'natDlg'].forEach((d) => {
-    // 背景（ダイアログの外側）をタップしたら閉じる。
-    $(d).addEventListener('click', (e) => { if (e.target === $(d)) $(d).close(); });
-  });
+  // 性格は背景（ダイアログの外側）をタップしても閉じる。
+  $('natDlg').addEventListener('click', (e) => { if (e.target === $('natDlg')) $('natDlg').close(); });
+  // サブスキルは続けて入れるので、Esc キーでも閉じない。
+  $('subDlg').addEventListener('cancel', (e) => e.preventDefault());
   $('subClose').onclick = () => $('subDlg').close();
   $('natClose').onclick = () => $('natDlg').close();
-  $('subClear').onclick = () => { state.subs[subAt] = null; refresh(engines); };
+  $('subClear').onclick = () => { state.subs = [null, null, null, null]; subAt = 0; refresh(engines); };
   $('natClear').onclick = () => { setNature(null); $('natDlg').close(); refresh(engines); };
   $('natBtn').onclick = () => { renderNatDlg(); $('natDlg').showModal(); };
 
   $('subTabs').addEventListener('click', (e) => {
     const b = e.target.closest('button');
-    if (b) { subAt = +b.dataset.i; renderSubDlg(); }
+    if (b && !b.disabled) { subAt = +b.dataset.i; renderSubDlg(); }
   });
   $('subBody').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || b.disabled) return;
     const id = b.dataset.v;
+    // 選んでいるものをもう一度押すと外す。後ろの枠が空いていないと順番が崩れるので、最後に入れた枠だけ外せる。
     if (state.subs[subAt] === id) {
+      if (!isLastFilled(subAt)) return;
       state.subs[subAt] = null;
     } else {
       state.subs[subAt] = id;
-      const n = state.N;
-      const next = [...Array(n - 1)].map((_, k) => (subAt + 1 + k) % n).find((j) => !state.subs[j]);
-      if (next === undefined) $('subDlg').close(); else subAt = next;
+      // 次の枠が空いていれば進む。入れ直しのときはその枠に留まる。
+      if (subAt + 1 < state.N && !state.subs[subAt + 1]) subAt += 1;
     }
     refresh(engines);
   });
@@ -248,18 +254,18 @@ function initDialogs(engines) {
 }
 
 function openSub(i) {
-  subAt = i;
+  subAt = reachable(i) ? i : firstEmpty();
   renderSubDlg();
   $('subDlg').showModal();
 }
 
 function renderSubDlg() {
-  if (subAt >= state.N) subAt = 0;
+  if (subAt >= state.N || !reachable(subAt)) subAt = firstEmpty();
   const lvs = UNLOCK.slice(0, state.N);
   $('subTitle').textContent = `Lv.${lvs[subAt]} のサブスキルを選んでください`;
   $('subTabs').innerHTML = lvs.map((lv, i) => {
     const id = state.subs[i];
-    return `<button class="${id ? `r-${byId[id].rarity}` : 'empty'}" data-i="${i}" aria-pressed="${i === subAt}"><small>Lv.${lv}</small><span>${id ? subShort(id) : '—'}</span></button>`;
+    return `<button class="${id ? `r-${byId[id].rarity}` : 'empty'}" data-i="${i}" aria-pressed="${i === subAt}" ${reachable(i) ? '' : 'disabled'}><small>Lv.${lv}</small><span>${id ? subShort(id) : '—'}</span></button>`;
   }).join('');
 
   // ほかの枠で選んでいるサブスキルには、その枠のレベルを付けて選べなくする。
