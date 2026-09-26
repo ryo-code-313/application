@@ -98,7 +98,7 @@ header{margin-bottom:12px}
 .subslot span{font-weight:700;font-size:.84rem;line-height:1.3}
 .subslot.empty,.dlg-tabs .empty{border-style:dashed}
 .subslot.empty span{color:var(--muted)}
-.subslot.off span,.natbtn .off{opacity:.45}
+.natbtn .off{opacity:.45}
 .subslot:disabled,.dlg-tabs button:disabled{opacity:.4;cursor:not-allowed}
 
 /* 性格のボタン。 */
@@ -130,9 +130,8 @@ dialog.sheet::backdrop{background:var(--scrim)}
 .dlg-tabs span{font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .dlg-tabs button[aria-pressed="true"]{outline:2.5px solid var(--psy);outline-offset:1px}
 .pick{position:relative;font:inherit;font-weight:700;font-size:.8rem;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 4px;min-height:40px;cursor:pointer}
-.pick.off{opacity:.45}
 .pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff;opacity:1}
-.pick:disabled{background:var(--line);border-color:var(--line);color:var(--muted);opacity:.7;cursor:not-allowed}
+.pick.used{background:var(--line);border-color:var(--line);color:var(--muted);opacity:.7}
 .pick i{position:absolute;top:-8px;right:-4px;font-style:normal;font-size:.62rem;font-weight:900;line-height:1;color:#fff;background:var(--tail);border-radius:999px;padding:3px 5px;font-variant-numeric:tabular-nums}
 .gold{display:grid;grid-template-columns:1fr 1fr;gap:8px 6px}
 .fams{margin-top:10px}
@@ -155,4 +154,4 @@ dialog.sheet::backdrop{background:var(--scrim)}
 .subslot.r-gold,.dlg-tabs button.r-gold,.pick.r-gold{background:var(--gold-bg);border-color:var(--gold-line)}
 .subslot.r-blue,.dlg-tabs button.r-blue,.pick.r-blue{background:var(--blue-bg);border-color:var(--blue-line)}
 .pick[aria-pressed="true"]{background:var(--psy);border-color:var(--psy);color:#fff}
-.pick:disabled{background:var(--line);border-color:var(--line);color:var(--muted)}
+.pick.used{background:var(--line);border-color:var(--line);color:var(--muted)}

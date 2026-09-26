@@ -182,14 +182,11 @@ function renderIngs(engines) {
   }));
 }
 
-// そのタイプの計算に効くサブスキル。ほかは「なし他」として計算する。
-const counts = (id) => def().PICK.includes(id);
-const rarityCls = (id) => `r-${byId[id].rarity}${counts(id) ? '' : ' off'}`;
+const rarityCls = (id) => `r-${byId[id].rarity}`;
 
 // サブスキルはレベルの低い枠から順に入れる。手前の枠が空いている枠は選べない。
 const reachable = (i) => currentSubs().slice(0, i).every(Boolean);
 const firstEmpty = () => Math.max(0, currentSubs().findIndex((v) => !v));
-const isLastFilled = (i) => currentSubs().slice(i + 1).every((v) => !v);
 
 // サブスキルの枠。タップすると、その枠を選ぶダイアログを開く。
 function renderSlots() {
@@ -231,12 +228,14 @@ function initDialogs(engines) {
   });
   $('subBody').addEventListener('click', (e) => {
     const b = e.target.closest('button');
-    if (!b || b.disabled) return;
+    if (!b) return;
     const id = b.dataset.v;
-    // 選んでいるものをもう一度押すと外す。後ろの枠が空いていないと順番が崩れるので、最後に入れた枠だけ外せる。
-    if (state.subs[subAt] === id) {
-      if (!isLastFilled(subAt)) return;
-      state.subs[subAt] = null;
+    // どこかの枠で選んでいるものを押すと、その枠から外して、その枠を入れ直す。
+    // 途中の枠を外したときは、そこを埋めるまで後ろの枠は選べない。
+    const at = currentSubs().indexOf(id);
+    if (at >= 0) {
+      state.subs[at] = null;
+      subAt = at;
     } else {
       state.subs[subAt] = id;
       // 次の枠が空いていれば進む。入れ直しのときはその枠に留まる。
@@ -268,15 +267,15 @@ function renderSubDlg() {
     return `<button class="${id ? `r-${byId[id].rarity}` : 'empty'}" data-i="${i}" aria-pressed="${i === subAt}" ${reachable(i) ? '' : 'disabled'}><small>Lv.${lv}</small><span>${id ? subShort(id) : '—'}</span></button>`;
   }).join('');
 
-  // ほかの枠で選んでいるサブスキルには、その枠のレベルを付けて選べなくする。
+  // ほかの枠で選んでいるサブスキルには、その枠のレベルを付ける。押すとその枠から外れる。
   const usedAt = Object.fromEntries(currentSubs().map((id, i) => [id, lvs[i]]).filter(([id]) => id));
   const chip = (id, label, cls) => {
     const lv = usedAt[id], mine = state.subs[subAt] === id;
-    return `<button class="pick ${rarityCls(id)} ${cls || ''}" data-v="${id}" aria-pressed="${mine}" aria-label="${SUB_FULL[id]}${lv ? `（Lv.${lv}で選択中）` : ''}" ${lv && !mine ? 'disabled' : ''}>${label}${lv ? `<i>${lv}</i>` : ''}</button>`;
+    return `<button class="pick ${rarityCls(id)} ${lv && !mine ? 'used' : ''} ${cls || ''}" data-v="${id}" aria-pressed="${mine}" aria-label="${SUB_FULL[id]}${lv ? `（Lv.${lv}で選択中・押すと外す）` : ''}">${label}${lv ? `<i>${lv}</i>` : ''}</button>`;
   };
   $('subBody').innerHTML = `<h3>金色サブスキル</h3><div class="gold">${GOLD.map((id) => chip(id, SUB_FULL[id])).join('')}</div>`
     + `<div class="fams">${FAMILIES.map(([label, sizes]) => `<div class="fam"><span>${label}</span><div>${sizes.map(([id, sz]) => chip(id, sz, 'sz')).join('')}</div></div>`).join('')}</div>`;
-  $('subNote').textContent = `薄い色のサブスキルは${METRIC[state.type]}に影響しないので、「なし他」として計算します。`;
+  $('subNote').textContent = `${METRIC[state.type]}に影響しないサブスキル（睡眠EXPボーナスなど）は、「なし他」として計算します。`;
 }
 
 // 性格の表。計算上は無補正と同じになる性格（効く補正がないもの）は薄くする。
