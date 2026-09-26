@@ -69,6 +69,8 @@ export function dayBerries(cap, ha, hs, ingP, berry, amts) {
     const got = berry * (1 - ingP * open);
     if (j < ha) day += got; else night += got;
     if (j === ha) fullBed = 1 - open;
+    // 満タン後も上のきのみ加算は同じ順序で続け、空の分布の更新だけ省く。
+    if (open === 0) continue;
     n.fill(0);
     for (let c = 0; c < cap; c++) {
       const x = d[c];
@@ -107,7 +109,12 @@ function runDays(r, dayOf) {
 
 export function daily(m, env) {
   const r = { ...prepare(m, env), mon: env.mon };
-  const d = runDays(r, (ha, hs, amts) => dayBerries(r.cap, ha, hs, r.ingP, r.berry, amts));
+  const days = new Map();
+  const d = runDays(r, (ha, hs, amts) => {
+    const key = `${ha}|${hs}|${amts.join(',')}`;
+    if (!days.has(key)) days.set(key, dayBerries(r.cap, ha, hs, r.ingP, r.berry, amts));
+    return days.get(key);
+  });
   return { ...r, ...d, Ha: avg(r.Ha), Hs: avg(r.Hs) };
 }
 

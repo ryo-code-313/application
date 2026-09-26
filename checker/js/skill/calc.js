@@ -68,7 +68,13 @@ function averagePatterns(r, mon, rollsOf) {
 
 export function daily(m, env) {
   const r = prepare(m, env);
-  const d = averagePatterns(r, MONS[env.mon], (hs, amts) => nightRolls(r.cap, hs, r.ingP, m.berry, amts));
+  // 捨て日を含め、同じ回数・食材配列の夜間分布を再計算しない。
+  const nights = new Map();
+  const d = averagePatterns(r, MONS[env.mon], (hs, amts) => {
+    const key = `${hs}|${amts.join(',')}`;
+    if (!nights.has(key)) nights.set(key, nightRolls(r.cap, hs, r.ingP, m.berry, amts));
+    return nights.get(key);
+  });
   return { ...r, ...d, Ha: avg(r.Ha), Hs: avg(r.Hs) };
 }
 

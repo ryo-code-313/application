@@ -69,6 +69,8 @@ export function nightRolls(cap, Hs, ingP, berry, ing) {
     for (let c = 0; c < cap; c++) s += d[c];
     P[Math.min(Hs, j + QUEUE_AFTER_FULL)] += open - s;
     open = s;
+    // 未満タンの確率が0なら、以後の遷移で分布は変わらない。
+    if (open === 0) break;
   }
   P[Hs] += open;
   return { P, full: 1 - open };

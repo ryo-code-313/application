@@ -77,6 +77,7 @@ export function nightIngredients(cap, hs, ingP, berry, slots, target) {
     }
     [d, n] = [n, d];
     open = d.reduce((s, x) => s + x, 0);
+    if (open === 0) break;
   }
   return { got, all, full: 1 - open };
 }
@@ -104,7 +105,12 @@ function runDays(r, slots, target, nightOf) {
 export function daily(m, arr, env) {
   const r = prepare(m, env);
   const slots = slotsOf(MONS[env.mon], arr);
-  const nightOf = (hs) => nightIngredients(r.cap, hs, r.ingP, m.berry, slots, env.target);
+  // 同じおてつだい回数の日は、この表示計算内で夜間の結果を共有する。
+  const nights = new Map();
+  const nightOf = (hs) => {
+    if (!nights.has(hs)) nights.set(hs, nightIngredients(r.cap, hs, r.ingP, m.berry, slots, env.target));
+    return nights.get(hs);
+  };
   const d = runDays(r, slots, env.target, nightOf);
   const uncapped = avg(r.Hs) * r.ingP * perHelp(slots, () => true);
   return { ...r, ...d, lost: uncapped - d.nightAll, Ha: avg(r.Ha), Hs: avg(r.Hs) };
