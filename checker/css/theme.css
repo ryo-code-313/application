@@ -1,6 +1,6 @@
 /* 厳選チェッカーの見た目「夜のノート」。レイアウトの土台は ../css/style.css（ミュウツー版と共有）で、ここで上書きする。
    生成りの紙の地に夜空色の文字。タイプの色（きのみ=青・食材=緑・スキル=紫）はアクセントにだけ使う（<html data-type>）。
-   文字は英数字が Outfit、日本語が Zen Kaku Gothic New（英数字用を先に書くと、ブラウザが1文字ずつ使い分ける）。 */
+   文字は Zen Kaku Gothic New。数字を見せる部分（基礎値・結果・倍率・順位など）だけ Space Grotesk にする。 */
 
 /* 共通の色。 */
 :root{
@@ -44,7 +44,11 @@
 :root[data-type="skill"][data-theme="dark"]{--psy-soft:#2B2140;--psy-ink:#D2BBF2;--grp:#B98AF0}
 
 /* 文字。 */
-body{font-family:"Outfit","Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink)}
+:root{--font-jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;--font-num:"Space Grotesk",var(--font-jp)}
+body{font-family:var(--font-jp);background:var(--bg);color:var(--ink)}
+/* 数字を見せる部分。日本語が混ざっても Space Grotesk にない字は Zen Kaku Gothic New で出る。 */
+.facts b,.hero .stat b,dl.rows dd,.log b,.bar b,.bar small.pos,.subslot small,.dlg-tabs small,.pick i{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+dl.rows dd span{font-family:var(--font-jp)}
 
 /* カード。 */
 section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 14px;margin-bottom:14px}
@@ -73,7 +77,7 @@ header h1 small::before{content:"";width:8px;height:8px;border-radius:50%;backgr
 .facts div{display:flex;flex-direction:column;gap:2px;padding:0 8px;border-left:1px solid var(--line-soft);background:none;border-radius:0;text-align:left}
 .facts div:first-child{border-left:none;padding-left:0}
 .facts small{display:block;font-size:.68rem;font-weight:700;color:var(--muted)}
-.facts b{font-size:1.2rem;font-weight:600}
+.facts b{font-size:1.2rem;font-weight:700}
 #monInfo{margin:10px 0 0;font-weight:500;line-height:1.6}
 #monInfo:empty{display:none}
 section>.natname:first-child{margin-top:0}
@@ -98,7 +102,7 @@ section>.natname:first-child{margin-top:0}
 .subslots{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .subslot,.dlg-tabs button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;cursor:pointer}
 .subslot{display:flex;flex-direction:row;align-items:center;gap:12px;min-height:52px;padding:0 14px;text-align:left}
-.subslot small{width:44px;flex:none;font-size:.8rem;font-weight:600;color:var(--muted)}
+.subslot small{width:44px;flex:none;font-size:.8rem;font-weight:700;color:var(--muted)}
 .subslot span{flex:1;font-weight:700;font-size:.95rem;line-height:1.3}
 .subslot::after{font-size:.7rem;font-weight:700;border-radius:999px;padding:3px 8px;flex:none}
 .subslot.r-gold::after{content:"金";color:var(--gold-ink);background:var(--gold-badge)}
@@ -129,22 +133,22 @@ section>.natname:first-child{margin-top:0}
 .hero{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-bottom:12px;padding:16px;border-radius:16px;background:var(--psy);color:#fff}
 .hero .stat{background:none;border-radius:0;padding:0;text-align:left;display:flex;align-items:baseline;gap:6px}
 .hero .stat small{color:#fff;opacity:.9;font-size:.75rem;font-weight:700}
-.hero .stat b{font-size:1.05rem;font-weight:600}
+.hero .stat b{font-size:1.05rem;font-weight:700}
 .hero .stat.main{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:none}
-.hero .stat.main b{font-size:2.6rem;font-weight:600;line-height:1}
+.hero .stat.main b{font-size:2.6rem;font-weight:700;line-height:1}
 .hero .stat:last-child{justify-content:flex-end}
 .split{grid-column:1/-1;height:8px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden}
 .split i{display:block;height:100%;width:0;background:#fff;border-radius:999px}
 dl.rows{grid-template-columns:minmax(8.5em,1fr) auto;column-gap:0}
 dl.rows dt,dl.rows dd{border-top:1px solid var(--line-soft);padding:10px 0}
-dl.rows dd{padding-left:12px;font-weight:600}
+dl.rows dd{padding-left:12px;font-weight:700}
 dl.rows dd span{font-weight:400}
 dl.rows .grp{color:var(--grp);font-size:.7rem;letter-spacing:.08em;padding:14px 0 6px;border-top:none}
 dl.rows dt.grp:first-child{padding-top:2px}
 
 /* 記録。 */
 .log li{border-top:1px solid var(--line-soft);padding:10px 0}
-.log b{color:var(--psy-ink);font-size:1.1rem;font-weight:600}
+.log b{color:var(--psy-ink);font-size:1.1rem;font-weight:700}
 .log li > div:nth-child(2){text-align:right}
 .del{min-height:44px;padding:4px 8px}
 
@@ -152,7 +156,7 @@ dl.rows dt.grp:first-child{padding-top:2px}
 .bar{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));border-radius:20px;padding:12px 12px 12px 18px;box-shadow:var(--shadow)}
 .bar-in{grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px}
 .bar small{font-size:.66rem}
-.bar b{font-size:1.4rem;font-weight:600}
+.bar b{font-size:1.4rem;font-weight:700}
 .bar small.pos{font-size:.64rem;margin-top:1px;white-space:nowrap}
 .bar small.pos:empty{display:none}
 .save{background:var(--save);color:#1D1B2C;border-radius:14px;min-height:48px;padding:0 16px;font-size:.9rem}
