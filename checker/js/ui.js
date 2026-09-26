@@ -58,12 +58,23 @@ const fmtPos = ({ pos, total }) => `${pos.toLocaleString()}位 / ${total.toLocal
 
 let worker = null;
 let inFlight = null;
+// 保存してなかったので計算している分布（タイプと条件の組）。読み込み中は「…」、計算中は「計算中」と出す。
+const computing = new Set();
+const jobKey = (type, e) => `${type}|${JSON.stringify(e)}`;
+const pendingText = () => (computing.has(jobKey(state.type, env())) ? '計算中' : '…');
 
 export function initUI(engines) {
   loadSettings();
   // Keeps the version tag on the worker URL so it loads the same module set as this page.
   worker = new Worker(new URL(`./worker.js${new URL(import.meta.url).search}`, import.meta.url), { type: 'module' });
   worker.onmessage = ({ data }) => {
+    if (data.computing) {
+      computing.add(jobKey(data.type, data.env));
+      renderBar(engines);
+      renderLog(engines);
+      return;
+    }
+    computing.delete(jobKey(data.type, data.env));
     engines[data.type].setDist(data.env, data.dist);
     inFlight = null;
     renderBar(engines);
@@ -418,9 +429,9 @@ function renderBar(engines) {
   const r = scoreOf(engine, { subs: currentSubs(), up: state.up, down: state.down, arr: state.arr }, e);
   $('bRatio').textContent = `${r.toFixed(2)}倍`;
   if (!engine.ready(e)) {
-    $('bRank').textContent = '計算中';
+    $('bRank').textContent = pendingText();
     $('bOdds').textContent = '…';
-    setPos('', '計算中');
+    setPos('', pendingText());
     requestDist(engines);
     return;
   }
@@ -441,7 +452,7 @@ function renderLog(engines) {
     .sort((a, b) => b.r - a.r);
 
   $('log').innerHTML = L.length
-    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(subShort).join('／')}　${x.nat ? `${esc(x.nat)} ` : ''}▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : '計算中'}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
+    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(subShort).join('／')}　${x.nat ? `${esc(x.nat)} ` : ''}▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : pendingText()}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
     : `<li class="empty">${state.N === 4 ? 'Lv.70まで' : 'Lv.50まで'}の記録はまだありません</li>`;
 
   $('log').querySelectorAll('.del').forEach((b) => {
