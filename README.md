@@ -6,8 +6,6 @@
 
 https://ryo-code-313.github.io/application/checker/
 
-リポジトリ直下（https://ryo-code-313.github.io/application/）と、統合前の `ingredient/`・`berry/` は、このページに移動します。統合前のミュウツー版の記録は、スキルタイプのミュウツーの記録として引き継ぎます。
-
 ## 構成
 
 - `checker/` — アプリ本体（画面・状態管理・タイプごとの計算エンジンとポケモンのデータ）
