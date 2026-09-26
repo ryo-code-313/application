@@ -115,8 +115,7 @@ export function initUI(engines) {
 
   $('save').onclick = () => {
     if (!isComplete()) return;
-    const memo = prompt('メモ（空欄可）', '') || '';
-    const entry = { t: Date.now(), memo: memo.trim(), mon: state.mon, subs: currentSubs(), nat: state.nat, up: state.up, down: state.down };
+    const entry = { t: Date.now(), mon: state.mon, subs: currentSubs(), nat: state.nat, up: state.up, down: state.down };
     appendLog(state.type === 'ingredient' ? { ...entry, arr: [...state.arr] } : entry);
     renderLog(engines);
     $('save').textContent = '記録済';
@@ -462,7 +461,11 @@ function renderLog(engines) {
     .sort((a, b) => b.r - a.r);
 
   $('log').innerHTML = L.length
-    ? L.map((x) => `<li><div>${esc(x.memo) || '—'}<div class="m">${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(subShort).join('／')}　${x.nat ? `${esc(x.nat)} ` : ''}▲${NATL[x.up]} ▼${NATL[x.down]}</div></div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : pendingText()}</div></div><button class="del" data-t="${x.t}">削除</button></li>`).join('')
+    ? L.map((x) => {
+      const detail = `${state.type === 'ingredient' ? `${arrName(mm, x.arr)}　` : ''}${x.subs.map(subShort).join('／')}　${x.nat ? `${esc(x.nat)} ` : ''}▲${NATL[x.up]} ▼${NATL[x.down]}`;
+      // Entries saved before the memo prompt was removed keep their memo as the heading.
+      return `<li><div>${x.memo ? `${esc(x.memo)}<div class="m">${detail}</div>` : detail}</div><div><b>${x.r.toFixed(2)}倍</b><div class="m">${rd ? (x.r > 0 ? `上位${fmtPct(engine.atLeast(x.r, e))}<br>${fmtPos(rankOf(engine, x.r, e))}` : '—') : pendingText()}</div></div><button class="del" data-t="${x.t}">削除</button></li>`;
+    }).join('')
     : `<li class="empty">${state.N === 4 ? 'Lv.70まで' : 'Lv.50まで'}の記録はまだありません</li>`;
 
   $('log').querySelectorAll('.del').forEach((b) => {
